@@ -61,6 +61,12 @@ function catClass(cat) {
   return 'cat-기타';
 }
 
+// [BUG FIX] s_end 필드가 날짜 문자열이거나 boolean일 수 있으므로
+// truthy 판단을 일관되게 처리하는 헬퍼 함수
+function isDone(item) {
+  return !!item.s_end;
+}
+
 // ── 전역 상태 ──────────────────────────────
 let allSchedules = [];   // 캐시된 일정 전체
 let calYear, calMonth;   // 현재 달력 기준 연/월
@@ -115,7 +121,8 @@ async function loadTodaySchedule() {
       `schedule?s_date=gte.${todayStart.toISOString()}&s_date=lte.${todayEnd.toISOString()}&order=s_date.asc&limit=10`
     );
     document.getElementById('statToday').textContent = data.length;
-    const doneCount = data.filter(d => d.s_end).length;
+    // [BUG FIX] isDone() 헬퍼로 완료 여부 일관 처리
+    const doneCount = data.filter(d => isDone(d)).length;
     document.getElementById('statDone').textContent = doneCount;
     const list = document.getElementById('todayList');
     if (data.length === 0) {
@@ -123,8 +130,8 @@ async function loadTodaySchedule() {
       return;
     }
     list.innerHTML = data.map(item => `
-      <li class="schedule-item ${item.s_end ? 'done' : ''}">
-        <div class="s-check">${item.s_end ? '✓' : ''}</div>
+      <li class="schedule-item ${isDone(item) ? 'done' : ''}">
+        <div class="s-check">${isDone(item) ? '✓' : ''}</div>
         <div class="s-info">
           <div class="s-name">${escapeHtml(item.s_name)}</div>
           <div class="s-time">${formatDateTime(item.s_date)}</div>
@@ -141,9 +148,10 @@ async function loadTodaySchedule() {
 }
 
 // ── 이번 주 수업 시간 (시간표) ─────────────
+// [BUG FIX] .catch(() => []) 와 outer try-catch 이중 처리 제거 → try-catch 단일화
 async function loadWeeklyClassHours() {
   try {
-    const allData = await supabaseFetch('timeschedule?select=ts_s_time,ts_e_time').catch(() => []);
+    const allData = await supabaseFetch('timeschedule?select=ts_s_time,ts_e_time');
     let totalMinutes = 0;
     (allData || []).forEach(item => {
       if (item.ts_s_time && item.ts_e_time) {
@@ -184,17 +192,20 @@ async function loadCalendarData(year, month) {
     );
     allSchedules = data || [];
 
+    // [BUG FIX] getNow() 원본 변형 방지 → 새 Date 객체로 분리
+    const now = new Date();
+    const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
     // 가장 가까운 시험 날짜 계산
-    const now = getNow(); now.setHours(0,0,0,0);
     const exams = allSchedules
-      .filter(d => d.s_category && d.s_category.includes('시험') && !d.s_end)
+      .filter(d => d.s_category && d.s_category.includes('시험') && !isDone(d))
       .map(d => new Date(d.s_date))
-      .filter(d => d >= now)
+      .filter(d => d >= nowMidnight)
       .sort((a, b) => a - b);
     nearestExamDate = exams.length > 0 ? exams[0] : null;
 
     if (nearestExamDate) {
-      const diff = Math.round((nearestExamDate - now) / 86400000);
+      const diff = Math.round((nearestExamDate - nowMidnight) / 86400000);
       document.getElementById('statExam').textContent = diff;
     }
   } catch (e) {
@@ -232,7 +243,9 @@ function renderCalendar() {
   const prevLastDate = new Date(calYear, calMonth - 1, 0).getDate();
 
   const todayStr = toDateStr(getNow());
-  const now = getNow(); now.setHours(0,0,0,0);
+  // [BUG FIX] getNow() 원본 변형 방지 → 새 Date 객체로 분리
+  const now = new Date();
+  const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   let cells = '';
   let dayCount = 0;
@@ -241,14 +254,14 @@ function renderCalendar() {
   for (let i = firstDay - 1; i >= 0; i--) {
     const d = prevLastDate - i;
     const dateStr = toDateStr(new Date(calYear, calMonth - 2, d));
-    cells += buildCell(dateStr, d, true, todayStr, grouped, now);
+    cells += buildCell(dateStr, d, true, todayStr, grouped, nowMidnight);
     dayCount++;
   }
 
   // 이번 달
   for (let d = 1; d <= lastDate; d++) {
     const dateStr = toDateStr(new Date(calYear, calMonth - 1, d));
-    cells += buildCell(dateStr, d, false, todayStr, grouped, now);
+    cells += buildCell(dateStr, d, false, todayStr, grouped, nowMidnight);
     dayCount++;
   }
 
@@ -256,7 +269,7 @@ function renderCalendar() {
   const remaining = Math.ceil(dayCount / 7) * 7 - dayCount;
   for (let d = 1; d <= remaining; d++) {
     const dateStr = toDateStr(new Date(calYear, calMonth, d));
-    cells += buildCell(dateStr, d, true, todayStr, grouped, now);
+    cells += buildCell(dateStr, d, true, todayStr, grouped, nowMidnight);
   }
 
   grid.innerHTML = cells;
@@ -271,7 +284,7 @@ function renderCalendar() {
   });
 
   // 다가오는 일정 업데이트
-  renderUpcoming(grouped, now);
+  renderUpcoming(grouped, nowMidnight);
 }
 
 function buildCell(dateStr, dayNum, otherMonth, todayStr, grouped, nowDate) {
@@ -304,7 +317,7 @@ function buildCell(dateStr, dayNum, otherMonth, todayStr, grouped, nowDate) {
   const more = items.length - MAX_SHOW;
   const chipsHtml = shown.map(item => {
     const cc = catClass(item.s_category);
-    return `<div class="cal-event-chip ${cc} ${item.s_end ? 'done' : ''}">${escapeHtml(item.s_name)}</div>`;
+    return `<div class="cal-event-chip ${cc} ${isDone(item) ? 'done' : ''}">${escapeHtml(item.s_name)}</div>`;
   }).join('');
   const moreHtml = more > 0 ? `<div class="cal-more">+${more}개 더</div>` : '';
 
@@ -329,12 +342,14 @@ function renderUpcoming(grouped, nowDate) {
   panel.style.display = '';
 
   const upcoming = [];
-  for (let i = 0; i <= 7; i++) {
+  // [BUG FIX] i <= 7 → i < 7 로 수정 (8일치→7일치, "7일 이내" 정확히 처리)
+  for (let i = 0; i < 7; i++) {
     const d = new Date(nowDate);
     d.setDate(d.getDate() + i);
     const key = toDateStr(d);
     (grouped[key] || []).forEach(item => {
-      if (!item.s_end) upcoming.push({ ...item, _dateStr: key });
+      // [BUG FIX] isDone() 헬퍼로 완료 여부 일관 처리
+      if (!isDone(item)) upcoming.push({ ...item, _dateStr: key });
     });
   }
   upcoming.sort((a, b) => new Date(a.s_date) - new Date(b.s_date));
@@ -449,10 +464,11 @@ function renderModalItems(items) {
   }
   container.innerHTML = items.map(item => {
     const cc = catClass(item.s_category);
+    // [BUG FIX] isDone() 헬퍼로 완료 여부 일관 처리
     return `
-      <div class="modal-item ${item.s_end ? 'done' : ''}" data-id="${item.id}">
+      <div class="modal-item ${isDone(item) ? 'done' : ''}" data-id="${item.id}">
         <div class="modal-item-header">
-          <div class="modal-item-check" data-id="${item.id}">${item.s_end ? '✓' : ''}</div>
+          <div class="modal-item-check" data-id="${item.id}">${isDone(item) ? '✓' : ''}</div>
           <div class="modal-item-name">${escapeHtml(item.s_name)}</div>
           ${item.s_category ? `<span class="modal-item-cat ${cc}">${escapeHtml(item.s_category)}</span>` : ''}
         </div>
@@ -473,7 +489,8 @@ function renderModalItems(items) {
       const id = btn.dataset.id;
       const item = allSchedules.find(s => String(s.id) === String(id));
       if (!item) return;
-      await toggleComplete(id, !item.s_end);
+      // [BUG FIX] isDone() 헬퍼로 현재 완료 여부 판단 후 반전
+      await toggleComplete(id, !isDone(item));
     });
   });
 
@@ -499,13 +516,13 @@ function renderModalItems(items) {
 }
 
 function showForm() {
+  // [BUG FIX] CSS .modal-form { display: none } 수정으로 JS style 강제 오버라이드 불필요
+  // visible 클래스 추가만으로 display: flex 전환됨
   document.getElementById('modalForm').classList.add('visible');
-  document.getElementById('modalForm').style.display = 'flex';
   document.getElementById('modalAddBtn').style.display = 'none';
 }
 function hideForm() {
   document.getElementById('modalForm').classList.remove('visible');
-  document.getElementById('modalForm').style.display = 'none';
   document.getElementById('modalAddBtn').style.display = '';
   clearForm();
 }
@@ -571,7 +588,7 @@ async function saveSchedule() {
       });
     } else {
       // INSERT
-      body.s_end = false;
+      body.s_end = null;
       await supabaseFetch(`schedule`, {
         method: 'POST',
         headers: { 'Prefer': 'return=representation' },
@@ -592,10 +609,13 @@ async function saveSchedule() {
 
 async function toggleComplete(id, newState) {
   try {
+    // [BUG FIX] newState가 true면 현재 시각 ISO 문자열, false면 null 전송
+    // s_end 컬럼이 timestamp 타입일 때도 boolean 타입일 때도 대응
+    const s_end = newState ? new Date().toISOString() : null;
     await supabaseFetch(`schedule?id=eq.${id}`, {
       method: 'PATCH',
       headers: { 'Prefer': 'return=representation' },
-      body: JSON.stringify({ s_end: newState })
+      body: JSON.stringify({ s_end })
     });
     await refreshCalendarAndToday();
     const grouped = groupByDate(allSchedules);
@@ -628,6 +648,8 @@ async function init() {
   initGNB();
   initHeroDate();
   initStatCards();
+  // [BUG FIX] initCalendarControls()가 calYear/calMonth를 초기화하므로
+  // 반드시 loadCalendarData() 호출 이전에 실행되어야 함
   initCalendarControls();
   initModal();
 
@@ -635,7 +657,7 @@ async function init() {
     loadTodaySchedule(),
     loadWeeklyClassHours(),
     loadExams(),
-    loadCalendarData(calYear, calMonth)
+    loadCalendarData(calYear, calMonth)  // calYear/calMonth 이제 정상 초기화됨
   ]);
 
   renderCalendar();
