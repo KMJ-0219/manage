@@ -20,41 +20,34 @@ async function supabaseFetch(path, options = {}) {
     const err = await res.text();
     throw new Error(`Supabase error: ${res.status} ${err}`);
   }
-  // 204 No Content (DELETE 등)
   if (res.status === 204) return null;
   return res.json();
 }
 
 // ── 날짜 유틸 ─────────────────────────────
 const DAYS_KO = ['일', '월', '화', '수', '목', '금', '토'];
+const _pad = n => String(n).padStart(2, '0');
 
 function getNow() { return new Date(); }
 
-const _pad = n => String(n).padStart(2, '0');
-
-// Date 객체 → 로컬 기준 'YYYY-MM-DD' 문자열
-// ※ toISOString()은 UTC 기준이므로 UTC+9 환경에서 자정 이전 시각이면 날짜가 하루 밀림
+// Date → 로컬 기준 'YYYY-MM-DD' (UTC 버그 방지)
 function toDateStr(d) {
   return `${d.getFullYear()}-${_pad(d.getMonth()+1)}-${_pad(d.getDate())}`;
 }
 
-// ISO 타임스탬프(Supabase 등) → 로컬 기준 'YYYY-MM-DD' 문자열
-// new Date(isoStr)는 로컬로 변환하므로 getFullYear 등은 로컬 기준 → OK
+// ISO → 로컬 'YYYY-MM-DD'
 function isoToDateStr(iso) {
   if (!iso) return '';
-  const d = new Date(iso); // ISO 파싱은 로컬 시간으로 보정됨
-  return toDateStr(d);
+  return toDateStr(new Date(iso));
 }
 
-// 'YYYY-MM-DD' 문자열 → 로컬 자정 Date 객체
-// ※ new Date('YYYY-MM-DD')는 UTC 자정으로 파싱 → UTC+9에서 getDay()가 전날 요일 반환
-// → new Date(y, m-1, d)로 로컬 자정 명시적 생성
+// 'YYYY-MM-DD' → 로컬 자정 Date (new Date('YYYY-MM-DD')는 UTC 자정이라 KST에서 날짜 밀림 방지)
 function parseDateStr(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
   return new Date(y, m - 1, d);
 }
 
-// 로컬 Date → 'YYYY-MM-DDTHH:MM:SS' (Supabase 쿼리용, timezone offset 없이 로컬 시간 그대로)
+// 로컬 Date → 'YYYY-MM-DDTHH:MM:SS' (Supabase 쿼리용 로컬 타임)
 function toLocalISO(d) {
   return `${d.getFullYear()}-${_pad(d.getMonth()+1)}-${_pad(d.getDate())}T${_pad(d.getHours())}:${_pad(d.getMinutes())}:${_pad(d.getSeconds())}`;
 }
@@ -67,7 +60,6 @@ function formatDateTime(iso) {
 
 function dDay(dateStr) {
   const now = new Date(); now.setHours(0,0,0,0);
-  // ※ new Date(dateStr) UTC 파싱 버그 방지 → parseDateStr 사용
   const target = parseDateStr(dateStr);
   const diff = Math.round((target - now) / 86400000);
   if (diff === 0) return 'D-Day';
@@ -80,10 +72,12 @@ function toLocalDatetimeValue(iso) {
   const d = new Date(iso);
   return `${d.getFullYear()}-${_pad(d.getMonth()+1)}-${_pad(d.getDate())}T${_pad(d.getHours())}:${_pad(d.getMinutes())}`;
 }
+
 function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
 function catClass(cat) {
   if (!cat) return 'cat-default';
   if (cat.includes('과제') || cat.includes('수행')) return 'cat-과제';
@@ -92,20 +86,23 @@ function catClass(cat) {
   return 'cat-기타';
 }
 
-// [BUG FIX] s_end 필드가 날짜 문자열이거나 boolean일 수 있으므로
-// truthy 판단을 일관되게 처리하는 헬퍼 함수
+// ──────────────────────────────────────────
+//  [핵심 수정] s_end 완료 여부 판단
+//  DB 컬럼이 boolean이므로 true/false만 허용
+//  null, false → 미완료 / true → 완료
+// ──────────────────────────────────────────
 function isDone(item) {
-  return !!item.s_end;
+  return item.s_end === true;
 }
 
 // ── 전역 상태 ──────────────────────────────
-let allSchedules = [];   // 캐시된 일정 전체
-let calYear, calMonth;   // 현재 달력 기준 연/월
+let allSchedules = [];
+let calYear, calMonth;
 let compactMode = false;
 let showDday = false;
 let showUpcoming = true;
-let nearestExamDate = null; // D-day 기준 날짜 (시험 카테고리 중 가장 가까운 것)
-let modalCurrentDate = null; // 모달에서 선택된 날짜 (YYYY-MM-DD)
+let nearestExamDate = null;
+let modalCurrentDate = null;
 
 // ── GNB ─────────────────────────────────
 function initGNB() {
@@ -153,7 +150,6 @@ async function loadTodaySchedule() {
       `schedule?s_date=gte.${toLocalISO(todayStart)}&s_date=lte.${toLocalISO(todayEnd)}&order=s_date.asc&limit=10`
     );
     document.getElementById('statToday').textContent = data.length;
-    // [BUG FIX] isDone() 헬퍼로 완료 여부 일관 처리
     const doneCount = data.filter(d => isDone(d)).length;
     document.getElementById('statDone').textContent = doneCount;
     const list = document.getElementById('todayList');
@@ -162,8 +158,8 @@ async function loadTodaySchedule() {
       return;
     }
     list.innerHTML = data.map(item => `
-      <li class="schedule-item ${isDone(item) ? 'done' : ''}">
-        <div class="s-check">${isDone(item) ? '✓' : ''}</div>
+      <li class="schedule-item ${isDone(item) ? 'done' : ''}" data-id="${item.id}">
+        <div class="s-check today-check" data-id="${item.id}" title="완료 토글">${isDone(item) ? '✓' : ''}</div>
         <div class="s-info">
           <div class="s-name">${escapeHtml(item.s_name)}</div>
           <div class="s-time">${formatDateTime(item.s_date)}</div>
@@ -171,6 +167,20 @@ async function loadTodaySchedule() {
         ${item.s_category ? `<span class="s-cat">${escapeHtml(item.s_category)}</span>` : ''}
       </li>
     `).join('');
+
+    // [핵심 수정] 오늘의 일정 체크박스 클릭 이벤트 바인딩
+    list.querySelectorAll('.today-check').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        const item = data.find(s => String(s.id) === String(id));
+        if (!item) return;
+        await toggleComplete(id, !isDone(item));
+        // 오늘 일정 목록 새로고침
+        await loadTodaySchedule();
+      });
+    });
+
   } catch (e) {
     console.error('일정 로드 실패:', e);
     document.getElementById('todayList').innerHTML = '<li class="empty-msg">일정을 불러오지 못했습니다.</li>';
@@ -180,7 +190,6 @@ async function loadTodaySchedule() {
 }
 
 // ── 이번 주 수업 시간 (시간표) ─────────────
-// [BUG FIX] .catch(() => []) 와 outer try-catch 이중 처리 제거 → try-catch 단일화
 async function loadWeeklyClassHours() {
   try {
     const allData = await supabaseFetch('timeschedule?select=ts_s_time,ts_e_time');
@@ -198,20 +207,51 @@ async function loadWeeklyClassHours() {
   }
 }
 
-// ── 시험 (exam 테이블 없으면 일정에서 시험 카테고리로 대체) ──
+// ── 시험 (schedule 테이블의 시험 카테고리 항목으로 대체) ──
 async function loadExams() {
-  document.getElementById('statExam').textContent = '—';
-  document.getElementById('examList').innerHTML =
-    '<p class="empty-msg">시험 페이지에서 시험을 등록하세요.</p>';
+  try {
+    const now = new Date(); now.setHours(0,0,0,0);
+    const data = await supabaseFetch(
+      `schedule?s_category=eq.시험&s_end=eq.false&order=s_date.asc&limit=5`
+    );
+    const upcoming = (data || []).filter(d => d.s_date && new Date(d.s_date) >= now);
+
+    // 가장 가까운 시험 D-day 스탯
+    if (upcoming.length > 0) {
+      const next = new Date(upcoming[0].s_date);
+      const diff = Math.round((next - now) / 86400000);
+      document.getElementById('statExam').textContent = diff;
+    } else {
+      document.getElementById('statExam').textContent = '—';
+    }
+
+    const examList = document.getElementById('examList');
+    if (upcoming.length === 0) {
+      examList.innerHTML = '<p class="empty-msg">다가오는 시험이 없습니다.</p>';
+      return;
+    }
+    examList.innerHTML = upcoming.map(item => {
+      const dateStr = isoToDateStr(item.s_date);
+      return `
+        <div class="exam-item">
+          <span class="exam-dday">${dDay(dateStr)}</span>
+          <span class="exam-name">${escapeHtml(item.s_name)}</span>
+          <span class="exam-date">${formatDateTime(item.s_date)}</span>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    document.getElementById('statExam').textContent = '—';
+    document.getElementById('examList').innerHTML =
+      '<p class="empty-msg">시험 정보를 불러오지 못했습니다.</p>';
+  }
 }
 
 // ==========================================
 //  캘린더 시스템
 // ==========================================
 
-// 캘린더용 일정 전체 로드 (해당 월 ± 여유)
 async function loadCalendarData(year, month) {
-  // 해당 월 전체 + 앞뒤 주 여유
   const start = new Date(year, month - 1, 1);
   start.setDate(start.getDate() - 7);
   start.setHours(0, 0, 0, 0);
@@ -225,7 +265,6 @@ async function loadCalendarData(year, month) {
     );
     allSchedules = data || [];
 
-    // [BUG FIX] getNow() 원본 변형 방지 → 새 Date 객체로 분리
     const now = new Date();
     const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -247,12 +286,11 @@ async function loadCalendarData(year, month) {
   }
 }
 
-// 날짜 문자열(YYYY-MM-DD)로 일정 그룹핑
+// 날짜별 일정 그룹핑
 function groupByDate(schedules) {
   const map = {};
   schedules.forEach(item => {
     if (!item.s_date) return;
-    // Supabase ISO 타임스탬프 → 로컬 기준 날짜 키
     const key = isoToDateStr(item.s_date);
     if (!map[key]) map[key] = [];
     map[key].push(item);
@@ -264,42 +302,33 @@ function groupByDate(schedules) {
 function renderCalendar() {
   const grid = document.getElementById('calGrid');
   const label = document.getElementById('calMonthLabel');
-
-  label.textContent = `${calYear}.${String(calMonth).padStart(2,'0')}`;
+  label.textContent = `${calYear}.${_pad(calMonth)}`;
 
   const grouped = groupByDate(allSchedules);
-
-  // 이번 달 1일의 요일
-  const firstDay = new Date(calYear, calMonth - 1, 1).getDay(); // 0=일
-  // 이번 달 마지막 날
+  const firstDay = new Date(calYear, calMonth - 1, 1).getDay();
   const lastDate = new Date(calYear, calMonth, 0).getDate();
-  // 이전 달 마지막 날
   const prevLastDate = new Date(calYear, calMonth - 1, 0).getDate();
-
   const todayStr = toDateStr(getNow());
-  // [BUG FIX] getNow() 원본 변형 방지 → 새 Date 객체로 분리
   const now = new Date();
   const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   let cells = '';
   let dayCount = 0;
 
-  // 이전 달 채우기
+  // 이전 달
   for (let i = firstDay - 1; i >= 0; i--) {
     const d = prevLastDate - i;
     const dateStr = toDateStr(new Date(calYear, calMonth - 2, d));
     cells += buildCell(dateStr, d, true, todayStr, grouped, nowMidnight);
     dayCount++;
   }
-
   // 이번 달
   for (let d = 1; d <= lastDate; d++) {
     const dateStr = toDateStr(new Date(calYear, calMonth - 1, d));
     cells += buildCell(dateStr, d, false, todayStr, grouped, nowMidnight);
     dayCount++;
   }
-
-  // 다음 달 채우기 (6주 완성)
+  // 다음 달
   const remaining = Math.ceil(dayCount / 7) * 7 - dayCount;
   for (let d = 1; d <= remaining; d++) {
     const dateStr = toDateStr(new Date(calYear, calMonth, d));
@@ -309,7 +338,6 @@ function renderCalendar() {
   grid.innerHTML = cells;
   grid.className = 'cal-grid' + (compactMode ? ' compact' : '') + (showDday ? ' show-dday' : '');
 
-  // 셀 클릭 이벤트
   grid.querySelectorAll('.cal-cell').forEach(cell => {
     cell.addEventListener('click', () => {
       const date = cell.dataset.date;
@@ -317,38 +345,29 @@ function renderCalendar() {
     });
   });
 
-  // 다가오는 일정 업데이트
   renderUpcoming(grouped, nowMidnight);
 }
 
 function buildCell(dateStr, dayNum, otherMonth, todayStr, grouped, nowDate) {
-  // [BUG FIX] new Date('YYYY-MM-DD')는 UTC 기준으로 파싱됨 → UTC+9에서 getDay()가 전날 요일 반환
-  // → 로컬 자정으로 명시적 파싱하여 요일 정확히 계산
-  const [y, m, d2] = dateStr.split('-').map(Number);
-  const cellDate = new Date(y, m - 1, d2);
+  const cellDate = parseDateStr(dateStr);
   const dow = cellDate.getDay();
   const isToday = dateStr === todayStr;
-  const isSun = dow === 0;
-  const isSat = dow === 6;
 
   let cls = 'cal-cell';
   if (otherMonth) cls += ' other-month';
-  if (isToday) cls += ' today';
-  if (isSun) cls += ' sun';
-  if (isSat) cls += ' sat';
+  if (isToday)    cls += ' today';
+  if (dow === 0)  cls += ' sun';
+  if (dow === 6)  cls += ' sat';
 
-  // D-day 계산
   let ddayHtml = '';
   if (nearestExamDate) {
-    const examDateOnly = new Date(nearestExamDate); examDateOnly.setHours(0,0,0,0);
-    // ※ new Date(dateStr) UTC 버그 방지 → parseDateStr 사용
-    const cellDateOnly = parseDateStr(dateStr);
-    const diff = Math.round((examDateOnly - cellDateOnly) / 86400000);
-    if (diff === 0) ddayHtml = `<span class="cal-dday-badge">D-Day</span>`;
+    const examMid = new Date(nearestExamDate); examMid.setHours(0,0,0,0);
+    const cellMid = parseDateStr(dateStr);
+    const diff = Math.round((examMid - cellMid) / 86400000);
+    if (diff === 0)           ddayHtml = `<span class="cal-dday-badge">D-Day</span>`;
     else if (diff > 0 && diff <= 30) ddayHtml = `<span class="cal-dday-badge">D-${diff}</span>`;
   }
 
-  // 이벤트 칩
   const items = grouped[dateStr] || [];
   const MAX_SHOW = 3;
   const shown = items.slice(0, MAX_SHOW);
@@ -373,20 +392,15 @@ function renderUpcoming(grouped, nowDate) {
   const panel = document.getElementById('upcomingPanel');
   const list = document.getElementById('upcomingList');
 
-  if (!showUpcoming) {
-    panel.style.display = 'none';
-    return;
-  }
+  if (!showUpcoming) { panel.style.display = 'none'; return; }
   panel.style.display = '';
 
   const upcoming = [];
-  // [BUG FIX] i <= 7 → i < 7 로 수정 (8일치→7일치, "7일 이내" 정확히 처리)
   for (let i = 0; i < 7; i++) {
     const d = new Date(nowDate);
     d.setDate(d.getDate() + i);
     const key = toDateStr(d);
     (grouped[key] || []).forEach(item => {
-      // [BUG FIX] isDone() 헬퍼로 완료 여부 일관 처리
       if (!isDone(item)) upcoming.push({ ...item, _dateStr: key });
     });
   }
@@ -411,7 +425,6 @@ function renderUpcoming(grouped, nowDate) {
     `;
   }).join('');
 
-  // 클릭 시 모달 열기
   list.querySelectorAll('.upcoming-item').forEach(el => {
     el.addEventListener('click', () => {
       const date = el.dataset.date;
@@ -420,7 +433,7 @@ function renderUpcoming(grouped, nowDate) {
   });
 }
 
-// 달력 컨트롤 초기화
+// 달력 컨트롤
 function initCalendarControls() {
   const now = getNow();
   calYear = now.getFullYear();
@@ -439,27 +452,21 @@ function initCalendarControls() {
     renderCalendar();
   });
 
-  // 간단 보기 토글
   document.getElementById('btnCompact').addEventListener('click', () => {
     compactMode = !compactMode;
     document.getElementById('btnCompact').classList.toggle('active', compactMode);
     renderCalendar();
   });
-
-  // D-day 토글
   document.getElementById('btnDday').addEventListener('click', () => {
     showDday = !showDday;
     document.getElementById('btnDday').classList.toggle('active', showDday);
     renderCalendar();
   });
-
-  // 예정 일정 토글
   document.getElementById('btnUpcoming').addEventListener('click', () => {
     showUpcoming = !showUpcoming;
     document.getElementById('btnUpcoming').classList.toggle('active', showUpcoming);
     renderCalendar();
   });
-  // 초기 상태: 예정 일정 활성
   document.getElementById('btnUpcoming').classList.add('active');
 }
 
@@ -470,14 +477,10 @@ function initCalendarControls() {
 function openModal(dateStr, items) {
   modalCurrentDate = dateStr;
   const overlay = document.getElementById('modalOverlay');
-  // [BUG FIX] new Date('YYYY-MM-DD') → UTC 기준 파싱으로 getDay()가 전날 요일 반환
-  // → 로컬 자정으로 파싱
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const dateObj = new Date(y, m - 1, d);
-  const label = `${dateObj.getFullYear()}년 ${dateObj.getMonth()+1}월 ${dateObj.getDate()}일 ${DAYS_KO[dateObj.getDay()]}요일`;
+  const d = parseDateStr(dateStr);
+  const label = `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${DAYS_KO[d.getDay()]}요일`;
   document.getElementById('modalDateLabel').textContent = label;
 
-  // D-day 표시 (시험 카테고리 있을 경우)
   const ddEl = document.getElementById('modalDday');
   const examItems = items.filter(i => i.s_category && i.s_category.includes('시험'));
   ddEl.textContent = examItems.length > 0 ? `🎯 ${dDay(dateStr)}` : '';
@@ -485,10 +488,7 @@ function openModal(dateStr, items) {
   renderModalItems(items);
   hideForm();
 
-  // 추가 버튼 날짜 미리 세팅
-  const dateInput = document.getElementById('formDate');
-  dateInput.value = `${dateStr}T09:00`;
-
+  document.getElementById('formDate').value = `${dateStr}T09:00`;
   overlay.classList.add('open');
 }
 
@@ -505,11 +505,10 @@ function renderModalItems(items) {
   }
   container.innerHTML = items.map(item => {
     const cc = catClass(item.s_category);
-    // [BUG FIX] isDone() 헬퍼로 완료 여부 일관 처리
     return `
       <div class="modal-item ${isDone(item) ? 'done' : ''}" data-id="${item.id}">
         <div class="modal-item-header">
-          <div class="modal-item-check" data-id="${item.id}">${isDone(item) ? '✓' : ''}</div>
+          <div class="modal-item-check" data-id="${item.id}" title="완료 토글">${isDone(item) ? '✓' : ''}</div>
           <div class="modal-item-name">${escapeHtml(item.s_name)}</div>
           ${item.s_category ? `<span class="modal-item-cat ${cc}">${escapeHtml(item.s_category)}</span>` : ''}
         </div>
@@ -524,18 +523,20 @@ function renderModalItems(items) {
     `;
   }).join('');
 
-  // 완료 토글
+  // ──────────────────────────────────────
+  //  [핵심 수정] 완료 체크박스 토글
+  //  s_end 컬럼이 boolean이므로 true/false 전송
+  // ──────────────────────────────────────
   container.querySelectorAll('.modal-item-check').forEach(btn => {
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
       const id = btn.dataset.id;
       const item = allSchedules.find(s => String(s.id) === String(id));
       if (!item) return;
-      // [BUG FIX] isDone() 헬퍼로 현재 완료 여부 판단 후 반전
       await toggleComplete(id, !isDone(item));
     });
   });
 
-  // 수정
   container.querySelectorAll('.edit-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.id;
@@ -546,7 +547,6 @@ function renderModalItems(items) {
     });
   });
 
-  // 삭제
   container.querySelectorAll('.del-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.id;
@@ -557,8 +557,6 @@ function renderModalItems(items) {
 }
 
 function showForm() {
-  // [BUG FIX] CSS .modal-form { display: none } 수정으로 JS style 강제 오버라이드 불필요
-  // visible 클래스 추가만으로 display: flex 전환됨
   document.getElementById('modalForm').classList.add('visible');
   document.getElementById('modalAddBtn').style.display = 'none';
 }
@@ -581,7 +579,9 @@ function populateForm(item) {
   document.getElementById('formName').value = item.s_name || '';
   document.getElementById('formDate').value = toLocalDatetimeValue(item.s_date);
   document.getElementById('formCategory').value = item.s_category || '';
-  document.getElementById('formKeywords').value = Array.isArray(item.s_keywords) ? item.s_keywords.join(', ') : (item.s_keywords || '');
+  document.getElementById('formKeywords').value = Array.isArray(item.s_keywords)
+    ? item.s_keywords.join(', ')
+    : (item.s_keywords || '');
   document.getElementById('formContent').value = item.s_content || '';
   document.getElementById('formAdd').value = item.s_add || '';
 }
@@ -597,6 +597,10 @@ function initModal() {
   });
   document.getElementById('formCancel').addEventListener('click', hideForm);
   document.getElementById('formSave').addEventListener('click', saveSchedule);
+  // ESC 키로 모달 닫기
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
 }
 
 // ── CRUD ───────────────────────────────────
@@ -621,15 +625,14 @@ async function saveSchedule() {
 
   try {
     if (id) {
-      // UPDATE
       await supabaseFetch(`schedule?id=eq.${id}`, {
         method: 'PATCH',
         headers: { 'Prefer': 'return=representation' },
         body: JSON.stringify(body)
       });
     } else {
-      // INSERT
-      body.s_end = null;
+      // [핵심 수정] 신규 등록 시 s_end = false (boolean)
+      body.s_end = false;
       await supabaseFetch(`schedule`, {
         method: 'POST',
         headers: { 'Prefer': 'return=representation' },
@@ -638,31 +641,34 @@ async function saveSchedule() {
     }
     hideForm();
     await refreshCalendarAndToday();
-    // 모달 재렌더링
-    const dateKey = modalCurrentDate;
     const grouped = groupByDate(allSchedules);
-    renderModalItems(grouped[dateKey] || []);
+    renderModalItems(grouped[modalCurrentDate] || []);
   } catch (e) {
     console.error('저장 실패:', e);
     alert('저장에 실패했습니다.');
   }
 }
 
+// ──────────────────────────────────────────
+//  [핵심 수정] 완료 토글
+//  s_end가 boolean 컬럼이므로 true / false 전송
+//  (이전 코드는 timestamp 문자열을 전송했었음 → 타입 미스매치로 저장 안 됨)
+// ──────────────────────────────────────────
 async function toggleComplete(id, newState) {
   try {
-    // [BUG FIX] newState가 true면 현재 시각 ISO 문자열, false면 null 전송
-    // s_end 컬럼이 timestamp 타입일 때도 boolean 타입일 때도 대응
-    const s_end = newState ? new Date().toISOString() : null;
     await supabaseFetch(`schedule?id=eq.${id}`, {
       method: 'PATCH',
       headers: { 'Prefer': 'return=representation' },
-      body: JSON.stringify({ s_end })
+      body: JSON.stringify({ s_end: newState === true })
     });
     await refreshCalendarAndToday();
-    const grouped = groupByDate(allSchedules);
-    renderModalItems(grouped[modalCurrentDate] || []);
+    if (modalCurrentDate) {
+      const grouped = groupByDate(allSchedules);
+      renderModalItems(grouped[modalCurrentDate] || []);
+    }
   } catch (e) {
     console.error('완료 토글 실패:', e);
+    alert('완료 상태 변경에 실패했습니다.');
   }
 }
 
@@ -689,16 +695,14 @@ async function init() {
   initGNB();
   initHeroDate();
   initStatCards();
-  // [BUG FIX] initCalendarControls()가 calYear/calMonth를 초기화하므로
-  // 반드시 loadCalendarData() 호출 이전에 실행되어야 함
-  initCalendarControls();
+  initCalendarControls(); // calYear/calMonth 초기화 먼저
   initModal();
 
   await Promise.allSettled([
     loadTodaySchedule(),
     loadWeeklyClassHours(),
     loadExams(),
-    loadCalendarData(calYear, calMonth)  // calYear/calMonth 이제 정상 초기화됨
+    loadCalendarData(calYear, calMonth)
   ]);
 
   renderCalendar();
