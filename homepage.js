@@ -29,30 +29,56 @@ async function supabaseFetch(path, options = {}) {
 const DAYS_KO = ['일', '월', '화', '수', '목', '금', '토'];
 
 function getNow() { return new Date(); }
+
+const _pad = n => String(n).padStart(2, '0');
+
+// Date 객체 → 로컬 기준 'YYYY-MM-DD' 문자열
+// ※ toISOString()은 UTC 기준이므로 UTC+9 환경에서 자정 이전 시각이면 날짜가 하루 밀림
 function toDateStr(d) {
-  // [BUG FIX] toISOString()은 UTC 기준이므로 한국(UTC+9)에서 날짜가 하루 밀릴 수 있음
-  // → 로컬 시간 기준으로 YYYY-MM-DD 생성
-  const pad = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  return `${d.getFullYear()}-${_pad(d.getMonth()+1)}-${_pad(d.getDate())}`;
 }
+
+// ISO 타임스탬프(Supabase 등) → 로컬 기준 'YYYY-MM-DD' 문자열
+// new Date(isoStr)는 로컬로 변환하므로 getFullYear 등은 로컬 기준 → OK
+function isoToDateStr(iso) {
+  if (!iso) return '';
+  const d = new Date(iso); // ISO 파싱은 로컬 시간으로 보정됨
+  return toDateStr(d);
+}
+
+// 'YYYY-MM-DD' 문자열 → 로컬 자정 Date 객체
+// ※ new Date('YYYY-MM-DD')는 UTC 자정으로 파싱 → UTC+9에서 getDay()가 전날 요일 반환
+// → new Date(y, m-1, d)로 로컬 자정 명시적 생성
+function parseDateStr(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+// 로컬 Date → 'YYYY-MM-DDTHH:MM:SS' (Supabase 쿼리용, timezone offset 없이 로컬 시간 그대로)
+function toLocalISO(d) {
+  return `${d.getFullYear()}-${_pad(d.getMonth()+1)}-${_pad(d.getDate())}T${_pad(d.getHours())}:${_pad(d.getMinutes())}:${_pad(d.getSeconds())}`;
+}
+
 function formatDateTime(iso) {
   if (!iso) return '';
   const d = new Date(iso);
-  return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  return `${d.getMonth()+1}/${d.getDate()} ${_pad(d.getHours())}:${_pad(d.getMinutes())}`;
 }
+
 function dDay(dateStr) {
   const now = new Date(); now.setHours(0,0,0,0);
-  const target = new Date(dateStr); target.setHours(0,0,0,0);
+  // ※ new Date(dateStr) UTC 파싱 버그 방지 → parseDateStr 사용
+  const target = parseDateStr(dateStr);
   const diff = Math.round((target - now) / 86400000);
   if (diff === 0) return 'D-Day';
   if (diff > 0) return `D-${diff}`;
   return `D+${Math.abs(diff)}`;
 }
+
 function toLocalDatetimeValue(iso) {
   if (!iso) return '';
   const d = new Date(iso);
-  const pad = n => String(n).padStart(2,'0');
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getFullYear()}-${_pad(d.getMonth()+1)}-${_pad(d.getDate())}T${_pad(d.getHours())}:${_pad(d.getMinutes())}`;
 }
 function escapeHtml(str) {
   if (!str) return '';
@@ -121,13 +147,6 @@ async function loadTodaySchedule() {
   const now = getNow();
   const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
   const todayEnd   = new Date(now); todayEnd.setHours(23,59,59,999);
-
-  // [BUG FIX] toISOString()은 UTC → 한국에서 쿼리 범위가 어긋남
-  // → 로컬 시간 기준 ISO 문자열 사용
-  function toLocalISO(d) {
-    const pad = n => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-  }
 
   try {
     const data = await supabaseFetch(
@@ -200,13 +219,6 @@ async function loadCalendarData(year, month) {
   end.setDate(end.getDate() + 7);
   end.setHours(23, 59, 59, 999);
 
-  // [BUG FIX] toISOString()은 UTC 기준 → 한국(UTC+9)에서는 날짜 범위가 ±9h 오차 발생
-  // → 로컬 시간 기준 ISO 문자열 직접 생성
-  function toLocalISO(d) {
-    const pad = n => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-  }
-
   try {
     const data = await supabaseFetch(
       `schedule?s_date=gte.${toLocalISO(start)}&s_date=lte.${toLocalISO(end)}&order=s_date.asc&limit=300`
@@ -240,9 +252,8 @@ function groupByDate(schedules) {
   const map = {};
   schedules.forEach(item => {
     if (!item.s_date) return;
-    // [BUG FIX] new Date(isoString).toISOString()은 UTC 기준 → 로컬 날짜와 불일치 가능
-    // → 로컬 시간 기준 toDateStr() 사용
-    const key = toDateStr(new Date(item.s_date));
+    // Supabase ISO 타임스탬프 → 로컬 기준 날짜 키
+    const key = isoToDateStr(item.s_date);
     if (!map[key]) map[key] = [];
     map[key].push(item);
   });
@@ -330,7 +341,8 @@ function buildCell(dateStr, dayNum, otherMonth, todayStr, grouped, nowDate) {
   let ddayHtml = '';
   if (nearestExamDate) {
     const examDateOnly = new Date(nearestExamDate); examDateOnly.setHours(0,0,0,0);
-    const cellDateOnly = new Date(dateStr); cellDateOnly.setHours(0,0,0,0);
+    // ※ new Date(dateStr) UTC 버그 방지 → parseDateStr 사용
+    const cellDateOnly = parseDateStr(dateStr);
     const diff = Math.round((examDateOnly - cellDateOnly) / 86400000);
     if (diff === 0) ddayHtml = `<span class="cal-dday-badge">D-Day</span>`;
     else if (diff > 0 && diff <= 30) ddayHtml = `<span class="cal-dday-badge">D-${diff}</span>`;
