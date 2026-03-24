@@ -29,7 +29,12 @@ async function supabaseFetch(path, options = {}) {
 const DAYS_KO = ['일', '월', '화', '수', '목', '금', '토'];
 
 function getNow() { return new Date(); }
-function toDateStr(d) { return d.toISOString().split('T')[0]; }
+function toDateStr(d) {
+  // [BUG FIX] toISOString()은 UTC 기준이므로 한국(UTC+9)에서 날짜가 하루 밀릴 수 있음
+  // → 로컬 시간 기준으로 YYYY-MM-DD 생성
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
 function formatDateTime(iso) {
   if (!iso) return '';
   const d = new Date(iso);
@@ -116,9 +121,17 @@ async function loadTodaySchedule() {
   const now = getNow();
   const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
   const todayEnd   = new Date(now); todayEnd.setHours(23,59,59,999);
+
+  // [BUG FIX] toISOString()은 UTC → 한국에서 쿼리 범위가 어긋남
+  // → 로컬 시간 기준 ISO 문자열 사용
+  function toLocalISO(d) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+
   try {
     const data = await supabaseFetch(
-      `schedule?s_date=gte.${todayStart.toISOString()}&s_date=lte.${todayEnd.toISOString()}&order=s_date.asc&limit=10`
+      `schedule?s_date=gte.${toLocalISO(todayStart)}&s_date=lte.${toLocalISO(todayEnd)}&order=s_date.asc&limit=10`
     );
     document.getElementById('statToday').textContent = data.length;
     // [BUG FIX] isDone() 헬퍼로 완료 여부 일관 처리
@@ -182,13 +195,21 @@ async function loadCalendarData(year, month) {
   // 해당 월 전체 + 앞뒤 주 여유
   const start = new Date(year, month - 1, 1);
   start.setDate(start.getDate() - 7);
+  start.setHours(0, 0, 0, 0);
   const end = new Date(year, month, 0);
   end.setDate(end.getDate() + 7);
   end.setHours(23, 59, 59, 999);
 
+  // [BUG FIX] toISOString()은 UTC 기준 → 한국(UTC+9)에서는 날짜 범위가 ±9h 오차 발생
+  // → 로컬 시간 기준 ISO 문자열 직접 생성
+  function toLocalISO(d) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+
   try {
     const data = await supabaseFetch(
-      `schedule?s_date=gte.${start.toISOString()}&s_date=lte.${end.toISOString()}&order=s_date.asc&limit=300`
+      `schedule?s_date=gte.${toLocalISO(start)}&s_date=lte.${toLocalISO(end)}&order=s_date.asc&limit=300`
     );
     allSchedules = data || [];
 
@@ -219,6 +240,8 @@ function groupByDate(schedules) {
   const map = {};
   schedules.forEach(item => {
     if (!item.s_date) return;
+    // [BUG FIX] new Date(isoString).toISOString()은 UTC 기준 → 로컬 날짜와 불일치 가능
+    // → 로컬 시간 기준 toDateStr() 사용
     const key = toDateStr(new Date(item.s_date));
     if (!map[key]) map[key] = [];
     map[key].push(item);
@@ -288,7 +311,10 @@ function renderCalendar() {
 }
 
 function buildCell(dateStr, dayNum, otherMonth, todayStr, grouped, nowDate) {
-  const cellDate = new Date(dateStr);
+  // [BUG FIX] new Date('YYYY-MM-DD')는 UTC 기준으로 파싱됨 → UTC+9에서 getDay()가 전날 요일 반환
+  // → 로컬 자정으로 명시적 파싱하여 요일 정확히 계산
+  const [y, m, d2] = dateStr.split('-').map(Number);
+  const cellDate = new Date(y, m - 1, d2);
   const dow = cellDate.getDay();
   const isToday = dateStr === todayStr;
   const isSun = dow === 0;
@@ -432,8 +458,11 @@ function initCalendarControls() {
 function openModal(dateStr, items) {
   modalCurrentDate = dateStr;
   const overlay = document.getElementById('modalOverlay');
-  const d = new Date(dateStr);
-  const label = `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${DAYS_KO[d.getDay()]}요일`;
+  // [BUG FIX] new Date('YYYY-MM-DD') → UTC 기준 파싱으로 getDay()가 전날 요일 반환
+  // → 로컬 자정으로 파싱
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dateObj = new Date(y, m - 1, d);
+  const label = `${dateObj.getFullYear()}년 ${dateObj.getMonth()+1}월 ${dateObj.getDate()}일 ${DAYS_KO[dateObj.getDay()]}요일`;
   document.getElementById('modalDateLabel').textContent = label;
 
   // D-day 표시 (시험 카테고리 있을 경우)
