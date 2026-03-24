@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J.A.R.V.I.S — Personal AI Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --holo-blue: #00d4ff;
+    --holo-cyan: #00fff0;
+    --holo-gold: #ffd700;
+    --holo-red: #ff4444;
+    --arc-glow: rgba(0, 212, 255, 0.15);
+    --bg-dark: #020810;
+    --bg-mid: #040e1a;
+    --panel-bg: rgba(0, 20, 40, 0.85);
+    --text-bright: #e0f8ff;
+    --text-dim: #4a8fa0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-dark);
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--text-bright);
+    height: 100vh;
+    overflow: hidden;
+    cursor: crosshair;
+  }
+
+  /* === BACKGROUND === */
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: gridPulse 8s ease-in-out infinite;
+  }
+  @keyframes gridPulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  .bg-radial {
+    position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse 60% 50% at 50% 110%, rgba(0,100,180,0.15) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 40% at 80% 20%, rgba(0,212,255,0.05) 0%, transparent 60%);
+  }
+
+  /* === SCANLINE === */
+  .scanline {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--holo-cyan), transparent);
+    animation: scan 4s linear infinite;
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  @keyframes scan { from { top: 0; } to { top: 100vh; } }
+
+  /* === MAIN LAYOUT === */
+  #app {
+    position: relative; z-index: 10;
+    display: grid;
+    grid-template-columns: 280px 1fr 260px;
+    grid-template-rows: 60px 1fr 180px;
+    height: 100vh;
+    gap: 0;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  /* === HEADER === */
+  .header {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid rgba(0,212,255,0.2);
+    padding: 0 8px 8px;
+  }
+
+  .logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 8px;
+    color: var(--holo-blue);
+    text-shadow: 0 0 20px var(--holo-blue), 0 0 40px rgba(0,212,255,0.3);
+    animation: logoPulse 3s ease-in-out infinite;
+  }
+  @keyframes logoPulse {
+    0%, 100% { text-shadow: 0 0 20px var(--holo-blue), 0 0 40px rgba(0,212,255,0.3); }
+    50% { text-shadow: 0 0 30px var(--holo-cyan), 0 0 60px rgba(0,255,240,0.5); }
+  }
+
+  .header-status {
+    display: flex; align-items: center; gap: 20px;
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #00ff88;
+    box-shadow: 0 0 10px #00ff88;
+    animation: blink 2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .time-display {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    color: var(--holo-cyan);
+    letter-spacing: 2px;
+  }
+
+  /* === PANELS === */
+  .panel {
+    background: var(--panel-bg);
+    border: 1px solid rgba(0,212,255,0.15);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+  }
+
+  .panel::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--holo-blue), transparent);
+    opacity: 0.6;
+  }
+
+  .panel-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    padding: 10px 14px 6px;
+    border-bottom: 1px solid rgba(0,212,255,0.08);
+    text-transform: uppercase;
+  }
+
+  /* === CHARACTER PANEL === */
+  .char-panel {
+    grid-column: 1;
+    grid-row: 2;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 16px;
+  }
+
+  /* ARC REACTOR CHARACTER */
+  .character-wrap {
+    position: relative;
+    width: 160px; height: 220px;
+    margin: 10px auto;
+    cursor: pointer;
+  }
+
+  .char-body {
+    position: absolute;
+    bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 80px; height: 160px;
+  }
+
+  /* Body */
+  .body-torso {
+    position: absolute;
+    bottom: 60px; left: 50%; transform: translateX(-50%);
+    width: 54px; height: 70px;
+    background: linear-gradient(180deg, #1a2a3a 0%, #0d1a28 100%);
+    border: 1px solid rgba(0,212,255,0.4);
+    border-radius: 6px 6px 4px 4px;
+    box-shadow: 0 0 15px rgba(0,212,255,0.1), inset 0 0 10px rgba(0,0,0,0.5);
+  }
+
+  /* Arc Reactor on chest */
+  .arc-reactor {
+    position: absolute;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff 0%, var(--holo-cyan) 40%, var(--holo-blue) 70%, transparent 100%);
+    box-shadow: 0 0 15px var(--holo-cyan), 0 0 30px var(--holo-blue), 0 0 50px rgba(0,212,255,0.4);
+    animation: reactorPulse 2s ease-in-out infinite;
+    z-index: 5;
+  }
+  @keyframes reactorPulse {
+    0%,100%{ box-shadow: 0 0 15px var(--holo-cyan), 0 0 30px var(--holo-blue); transform: translate(-50%,-50%) scale(1); }
+    50%{ box-shadow: 0 0 25px var(--holo-cyan), 0 0 50px var(--holo-blue), 0 0 80px rgba(0,212,255,0.6); transform: translate(-50%,-50%) scale(1.15); }
+  }
+
+  /* Suit lines on torso */
+  .suit-line {
+    position: absolute;
+    background: rgba(0,212,255,0.3);
+  }
+  .suit-line.v1 { width: 1px; height: 30px; left: 35%; top: 10%; }
+  .suit-line.v2 { width: 1px; height: 30px; right: 35%; top: 10%; }
+  .suit-line.h1 { height: 1px; width: 60%; left: 20%; bottom: 20%; }
+
+  /* Head */
+  .body-head {
+    position: absolute;
+    top: 0; left: 50%; transform: translateX(-50%);
+    width: 44px; height: 50px;
+    background: linear-gradient(180deg, #1e3048 0%, #0f1e30 100%);
+    border: 1px solid rgba(0,212,255,0.5);
+    border-radius: 50% 50% 30% 30%;
+    box-shadow: 0 0 20px rgba(0,212,255,0.15);
+    overflow: hidden;
+  }
+
+  /* Faceplate visor */
+  .visor {
+    position: absolute;
+    top: 40%; left: 50%; transform: translate(-50%, -50%);
+    width: 36px; height: 14px;
+    background: linear-gradient(90deg, rgba(0,212,255,0.15), rgba(0,255,240,0.6), rgba(0,212,255,0.15));
+    border-radius: 3px;
+    box-shadow: 0 0 10px var(--holo-cyan), inset 0 0 8px rgba(0,255,240,0.3);
+    animation: visorGlow 3s ease-in-out infinite;
+  }
+  @keyframes visorGlow {
+    0%,100%{ background: linear-gradient(90deg, rgba(0,212,255,0.15), rgba(0,255,240,0.6), rgba(0,212,255,0.15)); }
+    50%{ background: linear-gradient(90deg, rgba(0,212,255,0.3), rgba(0,255,240,0.9), rgba(0,212,255,0.3)); }
+  }
+
+  /* Ear pieces */
+  .ear { position: absolute; width: 8px; height: 20px; background: rgba(0,212,255,0.2); border: 1px solid rgba(0,212,255,0.4); border-radius: 2px; top: 35%; }
+  .ear.left { left: -9px; }
+  .ear.right { right: -9px; }
+
+  /* Legs */
+  .body-legs {
+    position: absolute;
+    bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 54px; height: 55px;
+    display: flex; gap: 4px;
+  }
+  .leg {
+    flex: 1;
+    background: linear-gradient(180deg, #0f1e30 0%, #070f1a 100%);
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 2px 2px 4px 4px;
+    position: relative;
+  }
+  .leg-glow {
+    position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
+    width: 12px; height: 4px;
+    background: var(--holo-blue);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--holo-blue);
+    animation: bootGlow 2s ease-in-out infinite alternate;
+  }
+  @keyframes bootGlow { from{opacity:0.4} to{opacity:1} }
+
+  /* Arms */
+  .body-arm {
+    position: absolute;
+    width: 14px; height: 55px;
+    background: linear-gradient(180deg, #152535 0%, #0a1520 100%);
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 3px;
+    bottom: 55px; top: auto;
+  }
+  .body-arm.left { left: -16px; }
+  .body-arm.right { right: -16px; }
+  .arm-joint {
+    position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%);
+    width: 10px; height: 10px; border-radius: 50%;
+    background: rgba(0,212,255,0.2);
+    border: 1px solid rgba(0,212,255,0.5);
+    box-shadow: 0 0 6px var(--holo-blue);
+  }
+
+  /* Floating animation */
+  .character-wrap { animation: charFloat 4s ease-in-out infinite; }
+  @keyframes charFloat {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+
+  /* Character halo rings */
+  .char-ring {
+    position: absolute; border-radius: 50%;
+    border: 1px solid rgba(0,212,255,0.2);
+    animation: ringRotate linear infinite;
+    pointer-events: none;
+  }
+  .char-ring:nth-child(1) { width: 140px; height: 140px; top: 40px; left: 10px; animation-duration: 8s; }
+  .char-ring:nth-child(2) { width: 110px; height: 110px; top: 55px; left: 25px; animation-duration: 12s; animation-direction: reverse; border-style: dashed; }
+  @keyframes ringRotate { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+
+  /* Status text under char */
+  .char-status {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-align: center;
+    margin-top: 8px;
+  }
+  .char-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    color: var(--holo-blue);
+    letter-spacing: 4px;
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  /* Customize button */
+  .btn-customize {
+    margin-top: 12px;
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(0,212,255,0.3);
+    color: var(--holo-cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 7px 10px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.3s;
+    text-transform: uppercase;
+  }
+  .btn-customize:hover {
+    background: rgba(0,212,255,0.1);
+    border-color: var(--holo-cyan);
+    box-shadow: 0 0 15px rgba(0,212,255,0.2);
+  }
+
+  /* === TASKS PANEL === */
+  .tasks-panel { grid-column: 1; grid-row: 3; padding: 10px 12px; overflow: hidden; }
+
+  .task-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(0,212,255,0.06);
+    font-size: 11px;
+    color: var(--text-dim);
+    transition: color 0.2s;
+    cursor: pointer;
+  }
+  .task-item:hover { color: var(--text-bright); }
+  .task-item.done { text-decoration: line-through; opacity: 0.4; }
+
+  .task-check {
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 1px solid rgba(0,212,255,0.4);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px;
+    transition: all 0.2s;
+  }
+  .task-item.done .task-check {
+    background: var(--holo-blue);
+    border-color: var(--holo-blue);
+    box-shadow: 0 0 8px var(--holo-blue);
+  }
+
+  /* === CENTER CHAT === */
+  .chat-panel {
+    grid-column: 2;
+    grid-row: 2 / 4;
+    display: flex; flex-direction: column;
+  }
+
+  .chat-messages {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex; flex-direction: column; gap: 14px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,212,255,0.2) transparent;
+  }
+
+  .msg {
+    display: flex; gap: 10px; align-items: flex-start;
+    animation: msgIn 0.4s cubic-bezier(0.16,1,0.3,1);
+  }
+  @keyframes msgIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+  .msg.user { flex-direction: row-reverse; }
+
+  .msg-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid rgba(0,212,255,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; flex-shrink: 0;
+    background: rgba(0,30,50,0.8);
+    box-shadow: 0 0 8px rgba(0,212,255,0.2);
+  }
+  .msg.user .msg-avatar { border-color: rgba(255,215,0,0.4); box-shadow: 0 0 8px rgba(255,215,0,0.2); }
+
+  .msg-bubble {
+    max-width: 75%;
+    background: rgba(0,30,50,0.7);
+    border: 1px solid rgba(0,212,255,0.12);
+    border-radius: 2px 8px 8px 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-bright);
+    position: relative;
+  }
+  .msg.user .msg-bubble {
+    background: rgba(0,50,80,0.6);
+    border-color: rgba(0,212,255,0.2);
+    border-radius: 8px 2px 8px 8px;
+  }
+
+  .msg-meta {
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 5px;
+    letter-spacing: 1px;
+  }
+
+  /* Typing indicator */
+  .typing-dots {
+    display: flex; gap: 4px; align-items: center; padding: 4px 0;
+  }
+  .typing-dots span {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--holo-blue);
+    animation: dot 1.2s ease-in-out infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dot { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+
+  /* === CHAT INPUT === */
+  .chat-input-wrap {
+    border-top: 1px solid rgba(0,212,255,0.1);
+    padding: 12px 16px;
+    background: rgba(0,10,20,0.5);
+  }
+
+  .input-row {
+    display: flex; gap: 8px; align-items: center;
+  }
+
+  .chat-input {
+    flex: 1;
+    background: rgba(0,20,40,0.6);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 3px;
+    color: var(--text-bright);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .chat-input:focus {
+    border-color: rgba(0,212,255,0.5);
+    box-shadow: 0 0 15px rgba(0,212,255,0.1), inset 0 0 10px rgba(0,212,255,0.03);
+  }
+  .chat-input::placeholder { color: var(--text-dim); }
+
+  .btn-send, .btn-voice {
+    width: 36px; height: 36px;
+    background: rgba(0,30,50,0.8);
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 3px;
+    color: var(--holo-cyan);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .btn-send:hover, .btn-voice:hover {
+    background: rgba(0,212,255,0.15);
+    box-shadow: 0 0 15px rgba(0,212,255,0.3);
+    border-color: var(--holo-cyan);
+  }
+  .btn-voice.active {
+    background: rgba(255,68,68,0.2);
+    border-color: var(--holo-red);
+    color: var(--holo-red);
+    box-shadow: 0 0 15px rgba(255,68,68,0.3);
+    animation: voicePulse 1s ease-in-out infinite;
+  }
+  @keyframes voicePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+
+  .input-hints {
+    display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  }
+  .hint-chip {
+    font-size: 9px;
+    color: var(--text-dim);
+    border: 1px solid rgba(0,212,255,0.12);
+    padding: 3px 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .hint-chip:hover {
+    color: var(--holo-cyan);
+    border-color: rgba(0,212,255,0.4);
+    background: rgba(0,212,255,0.05);
+  }
+
+  /* === RIGHT PANEL === */
+  .info-panel {
+    grid-column: 3;
+    grid-row: 2;
+    padding: 10px 14px;
+    overflow-y: auto;
+  }
+
+  .info-section { margin-bottom: 14px; }
+  .info-label {
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+
+  /* Calendar mini */
+  .mini-cal {
+    background: rgba(0,15,30,0.5);
+    border: 1px solid rgba(0,212,255,0.1);
+    border-radius: 3px;
+    padding: 8px;
+  }
+  .cal-header {
+    display: flex; justify-content: space-between;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px; color: var(--holo-blue);
+    letter-spacing: 2px; margin-bottom: 6px;
+  }
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7,1fr);
+    gap: 1px; text-align: center;
+  }
+  .cal-day { font-size: 9px; color: var(--text-dim); padding: 2px 0; }
+  .cal-day.header { color: rgba(0,212,255,0.4); margin-bottom: 2px; }
+  .cal-day.today {
+    background: var(--holo-blue);
+    color: var(--bg-dark);
+    border-radius: 50%;
+    font-weight: bold;
+  }
+  .cal-day.has-event { color: var(--holo-cyan); position: relative; }
+  .cal-day.has-event::after {
+    content:''; position: absolute;
+    bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 3px; height: 3px; border-radius: 50%;
+    background: var(--holo-gold);
+  }
+
+  /* System metrics */
+  .metric-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+  }
+  .metric-label { font-size: 10px; color: var(--text-dim); }
+  .metric-val { font-size: 10px; color: var(--holo-cyan); font-family: 'Orbitron', sans-serif; }
+  .metric-bar {
+    height: 2px; background: rgba(0,212,255,0.1); border-radius: 1px;
+    margin-bottom: 10px;
+  }
+  .metric-fill {
+    height: 100%; border-radius: 1px;
+    background: linear-gradient(90deg, var(--holo-blue), var(--holo-cyan));
+    box-shadow: 0 0 6px var(--holo-cyan);
+    transition: width 1s ease;
+  }
+
+  /* Reminders */
+  .reminder-item {
+    display: flex; gap: 8px; align-items: flex-start;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(0,212,255,0.06);
+    font-size: 10px;
+  }
+  .reminder-time {
+    color: var(--holo-gold);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px;
+    min-width: 36px;
+    margin-top: 1px;
+  }
+  .reminder-text { color: var(--text-dim); line-height: 1.4; }
+
+  /* === STATUS PANEL bottom right === */
+  .status-panel {
+    grid-column: 3;
+    grid-row: 3;
+    padding: 10px 14px;
+  }
+
+  .search-bar {
+    display: flex; gap: 6px; align-items: center;
+    background: rgba(0,15,30,0.5);
+    border: 1px solid rgba(0,212,255,0.15);
+    border-radius: 3px;
+    padding: 7px 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .search-bar:hover { border-color: rgba(0,212,255,0.4); }
+  .search-icon { color: var(--text-dim); font-size: 11px; }
+  .search-text { color: var(--text-dim); font-size: 10px; letter-spacing: 1px; flex: 1; }
+
+  .quick-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .quick-btn {
+    background: rgba(0,20,40,0.6);
+    border: 1px solid rgba(0,212,255,0.12);
+    border-radius: 3px;
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 8px 6px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .quick-btn:hover {
+    background: rgba(0,212,255,0.08);
+    color: var(--holo-cyan);
+    border-color: rgba(0,212,255,0.3);
+    box-shadow: 0 0 10px rgba(0,212,255,0.1);
+  }
+  .quick-btn .qb-icon { display: block; font-size: 16px; margin-bottom: 3px; }
+
+  /* === CUSTOMIZE MODAL === */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,5,15,0.85);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: var(--bg-mid);
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 6px;
+    width: 440px;
+    box-shadow: 0 0 60px rgba(0,212,255,0.15);
+    animation: modalIn 0.4s cubic-bezier(0.16,1,0.3,1);
+    overflow: hidden;
+  }
+  @keyframes modalIn { from{transform:scale(0.95) translateY(10px)} to{transform:scale(1) translateY(0)} }
+
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(0,212,255,0.1);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .modal-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px; letter-spacing: 3px; color: var(--holo-blue);
+  }
+  .modal-close {
+    background: none; border: none; color: var(--text-dim);
+    font-size: 18px; cursor: pointer; line-height: 1;
+    transition: color 0.2s;
+  }
+  .modal-close:hover { color: var(--holo-red); }
+
+  .modal-body { padding: 20px; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-label {
+    display: block; font-size: 9px; letter-spacing: 2px;
+    color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase;
+  }
+  .form-input, .form-select {
+    width: 100%;
+    background: rgba(0,20,40,0.6);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 3px;
+    color: var(--text-bright);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+  }
+  .form-input:focus, .form-select:focus { border-color: rgba(0,212,255,0.5); }
+  .form-select option { background: #040e1a; }
+
+  .color-picks { display: flex; gap: 8px; }
+  .color-pick {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .color-pick.active, .color-pick:hover {
+    border-color: white;
+    transform: scale(1.15);
+    box-shadow: 0 0 10px currentColor;
+  }
+
+  .btn-apply {
+    width: 100%;
+    background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,100,180,0.2));
+    border: 1px solid rgba(0,212,255,0.4);
+    color: var(--holo-cyan);
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    padding: 10px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+  .btn-apply:hover {
+    background: rgba(0,212,255,0.2);
+    box-shadow: 0 0 20px rgba(0,212,255,0.3);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.2); border-radius: 2px; }
+
+  /* Loading overlay */
+  .loading-overlay {
+    position: fixed; inset: 0; z-index: 2000;
+    background: var(--bg-dark);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: opacity 0.8s 0.5s;
+  }
+  .loading-overlay.hide { opacity: 0; pointer-events: none; }
+  .loading-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 36px; font-weight: 900;
+    letter-spacing: 12px;
+    color: var(--holo-blue);
+    text-shadow: 0 0 40px var(--holo-blue);
+    margin-bottom: 20px;
+    animation: loadPulse 1s ease-in-out infinite;
+  }
+  @keyframes loadPulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
+  .loading-bar-wrap {
+    width: 300px; height: 2px;
+    background: rgba(0,212,255,0.1);
+    border-radius: 1px; overflow: hidden;
+  }
+  .loading-bar {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, var(--holo-blue), var(--holo-cyan));
+    box-shadow: 0 0 10px var(--holo-cyan);
+    animation: loadBar 1.2s ease-out 0.3s forwards;
+  }
+  @keyframes loadBar { to { width: 100%; } }
+  .loading-text {
+    margin-top: 14px; font-size: 11px; letter-spacing: 3px; color: var(--text-dim);
+    animation: fadeText 0.5s ease-in 0.8s forwards; opacity: 0;
+  }
+  @keyframes fadeText { to { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<!-- Loading screen -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-logo">J.A.R.V.I.S</div>
+  <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
+  <div class="loading-text">INITIALIZING PERSONAL ASSISTANT PROTOCOL...</div>
+</div>
+
+<!-- Scanline FX -->
+<div class="scanline"></div>
+<div class="bg-grid"></div>
+<div class="bg-radial"></div>
+
+<!-- MAIN APP -->
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">J.A.R.V.I.S</div>
+    <div class="header-status">
+      <div class="status-dot"></div>
+      <span style="font-size:10px;color:var(--text-dim);letter-spacing:2px;">시스템 온라인</span>
+      <div class="time-display" id="clockDisplay">--:--:--</div>
+    </div>
+  </header>
+
+  <!-- LEFT: CHARACTER -->
+  <div class="panel char-panel">
+    <div class="panel-title">에이전트 상태</div>
+    <div class="character-wrap" id="charWrap" onclick="openCustomize()">
+      <div class="char-ring"></div>
+      <div class="char-ring"></div>
+      <div class="char-body">
+        <!-- Head -->
+        <div class="body-head" id="charHead">
+          <div class="visor"></div>
+          <div class="ear left"></div>
+          <div class="ear right"></div>
+        </div>
+        <!-- Arms -->
+        <div class="body-arm left"><div class="arm-joint"></div></div>
+        <div class="body-arm right"><div class="arm-joint"></div></div>
+        <!-- Torso -->
+        <div class="body-torso" id="charTorso">
+          <div class="suit-line v1"></div>
+          <div class="suit-line v2"></div>
+          <div class="suit-line h1"></div>
+          <div class="arc-reactor"></div>
+        </div>
+        <!-- Legs -->
+        <div class="body-legs">
+          <div class="leg"><div class="leg-glow"></div></div>
+          <div class="leg"><div class="leg-glow"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="char-name" id="charName">J.A.R.V.I.S</div>
+    <div class="char-status">● 대기 중 — 모든 시스템 정상</div>
+    <button class="btn-customize" onclick="openCustomize()">⚙ 캐릭터 커스터마이징</button>
+  </div>
+
+  <!-- LEFT BOTTOM: TASKS -->
+  <div class="panel tasks-panel">
+    <div class="panel-title">할 일 목록</div>
+    <div id="taskList">
+      <div class="task-item" onclick="toggleTask(this)">
+        <div class="task-check">✓</div>
+        <span>주간 보고서 작성</span>
+      </div>
+      <div class="task-item done" onclick="toggleTask(this)">
+        <div class="task-check">✓</div>
+        <span>팀 미팅 자료 준비</span>
+      </div>
+      <div class="task-item" onclick="toggleTask(this)">
+        <div class="task-check"></div>
+        <span>클라이언트 이메일 답장</span>
+      </div>
+      <div class="task-item" onclick="toggleTask(this)">
+        <div class="task-check"></div>
+        <span>프로젝트 마감 확인</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: CHAT -->
+  <div class="panel chat-panel">
+    <div class="panel-title">대화 인터페이스</div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="msg jarvis">
+        <div class="msg-avatar">AI</div>
+        <div>
+          <div class="msg-bubble">
+            안녕하세요. 저는 <strong style="color:var(--holo-cyan)">J.A.R.V.I.S</strong>입니다. 오늘 어떤 업무를 도와드릴까요? 일정 관리, 문서 작업, 인터넷 검색, 알림 설정 등 무엇이든 말씀해 주세요.
+          </div>
+          <div class="msg-meta">JARVIS · 시스템 시작</div>
+        </div>
+      </div>
+    </div>
+    <div class="chat-input-wrap">
+      <div class="input-row">
+        <button class="btn-voice" id="voiceBtn" onclick="toggleVoice()" title="음성 입력">🎙</button>
+        <input class="chat-input" id="chatInput" placeholder="J.A.R.V.I.S에게 업무를 지시하세요..." onkeydown="handleKey(event)">
+        <button class="btn-send" onclick="sendMessage()" title="전송">➤</button>
+      </div>
+      <div class="input-hints">
+        <span class="hint-chip" onclick="useHint(this)">📅 오늘 일정 알려줘</span>
+        <span class="hint-chip" onclick="useHint(this)">🔍 최신 AI 뉴스 검색</span>
+        <span class="hint-chip" onclick="useHint(this)">📄 문서 요약해줘</span>
+        <span class="hint-chip" onclick="useHint(this)">⏰ 3시에 알림 설정</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT TOP: INFO -->
+  <div class="panel info-panel">
+    <div class="panel-title">시스템 정보</div>
+
+    <div class="info-section">
+      <div class="info-label">이번 달 일정</div>
+      <div class="mini-cal">
+        <div class="cal-header">
+          <span id="calMonth">2026.03</span>
+          <span>▶</span>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <div class="info-label">시스템 상태</div>
+      <div class="metric-row">
+        <span class="metric-label">CPU</span>
+        <span class="metric-val" id="cpuVal">34%</span>
+      </div>
+      <div class="metric-bar"><div class="metric-fill" id="cpuBar" style="width:34%"></div></div>
+      <div class="metric-row">
+        <span class="metric-label">메모리</span>
+        <span class="metric-val" id="memVal">58%</span>
+      </div>
+      <div class="metric-bar"><div class="metric-fill" id="memBar" style="width:58%"></div></div>
+      <div class="metric-row">
+        <span class="metric-label">AI 응답속도</span>
+        <span class="metric-val">0.3s</span>
+      </div>
+      <div class="metric-bar"><div class="metric-fill" style="width:92%"></div></div>
+    </div>
+
+    <div class="info-section">
+      <div class="info-label">리마인더</div>
+      <div class="reminder-item">
+        <div class="reminder-time">14:00</div>
+        <div class="reminder-text">팀 스프린트 리뷰 미팅</div>
+      </div>
+      <div class="reminder-item">
+        <div class="reminder-time">17:30</div>
+        <div class="reminder-text">주간 보고서 제출 마감</div>
+      </div>
+      <div class="reminder-item">
+        <div class="reminder-time">내일</div>
+        <div class="reminder-text">클라이언트 발표 준비</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT BOTTOM: QUICK ACTIONS -->
+  <div class="panel status-panel">
+    <div class="panel-title">빠른 실행</div>
+    <div class="search-bar" onclick="focusSearch()">
+      <span class="search-icon">🔍</span>
+      <span class="search-text">인터넷 검색...</span>
+    </div>
+    <div class="quick-btns">
+      <button class="quick-btn" onclick="quickAction('schedule')"><span class="qb-icon">📅</span>일정 추가</button>
+      <button class="quick-btn" onclick="quickAction('file')"><span class="qb-icon">📄</span>파일 작업</button>
+      <button class="quick-btn" onclick="quickAction('alarm')"><span class="qb-icon">⏰</span>알림 설정</button>
+      <button class="quick-btn" onclick="quickAction('summary')"><span class="qb-icon">🧠</span>요약 분석</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- CUSTOMIZE MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalBg(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">캐릭터 커스터마이징</div>
+      <button class="modal-close" onclick="closeCustomize()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">비서 이름</label>
+        <input type="text" class="form-input" id="nameInput" placeholder="J.A.R.V.I.S" value="J.A.R.V.I.S">
+      </div>
+      <div class="form-group">
+        <label class="form-label">수트 색상</label>
+        <div class="color-picks">
+          <div class="color-pick active" style="background:#00d4ff;color:#00d4ff" data-color="#00d4ff" data-accent="#00fff0" onclick="pickColor(this)" title="사이버 블루"></div>
+          <div class="color-pick" style="background:#ff4444;color:#ff4444" data-color="#ff4444" data-accent="#ff8888" onclick="pickColor(this)" title="아이언맨 레드"></div>
+          <div class="color-pick" style="background:#00ff88;color:#00ff88" data-color="#00ff88" data-accent="#aaffcc" onclick="pickColor(this)" title="에메랄드"></div>
+          <div class="color-pick" style="background:#ffd700;color:#ffd700" data-color="#ffd700" data-accent="#ffe44d" onclick="pickColor(this)" title="골드"></div>
+          <div class="color-pick" style="background:#cc44ff;color:#cc44ff" data-color="#cc44ff" data-accent="#ee88ff" onclick="pickColor(this)" title="퍼플"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">대화 스타일</label>
+        <select class="form-select" id="styleSelect">
+          <option value="formal">격식체 (자비스 스타일)</option>
+          <option value="casual">친근한 말투</option>
+          <option value="brief">간결한 보고 형식</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">애니메이션 속도</label>
+        <select class="form-select" id="animSelect">
+          <option value="normal">보통</option>
+          <option value="fast">빠름</option>
+          <option value="slow">느림 (부드럽게)</option>
+        </select>
+      </div>
+      <button class="btn-apply" onclick="applyCustomize()">▶ 적용하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // === LOADING ===
+  setTimeout(() => {
+    document.getElementById('loadingOverlay').classList.add('hide');
+    setTimeout(()=>document.getElementById('loadingOverlay').remove(),900);
+  }, 1800);
+
+  // === CLOCK ===
+  function updateClock() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+    document.getElementById('clockDisplay').textContent = `${h}:${m}:${s}`;
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // === CALENDAR ===
+  function buildCal() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    document.getElementById('calMonth').textContent = `${year}.${String(month+1).padStart(2,'0')}`;
+    const grid = document.getElementById('calGrid');
+    grid.innerHTML = '';
+    ['일','월','화','수','목','금','토'].forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'cal-day header';
+      el.textContent = d;
+      grid.appendChild(el);
+    });
+    const first = new Date(year, month, 1).getDay();
+    const days = new Date(year, month+1, 0).getDate();
+    const eventDays = [5, 12, 18, 25];
+    for(let i=0;i<first;i++){
+      const el = document.createElement('div'); el.className='cal-day';
+      grid.appendChild(el);
+    }
+    for(let d=1;d<=days;d++){
+      const el = document.createElement('div');
+      el.className = 'cal-day' + (d===now.getDate()?' today':'') + (eventDays.includes(d)?' has-event':'');
+      el.textContent = d;
+      grid.appendChild(el);
+    }
+  }
+  buildCal();
+
+  // === METRICS ANIMATION ===
+  function animateMetrics() {
+    const cpu = 25 + Math.random()*30;
+    const mem = 50 + Math.random()*20;
+    document.getElementById('cpuVal').textContent = Math.round(cpu)+'%';
+    document.getElementById('memVal').textContent = Math.round(mem)+'%';
+    document.getElementById('cpuBar').style.width = cpu+'%';
+    document.getElementById('memBar').style.width = mem+'%';
+  }
+  setInterval(animateMetrics, 3000);
+
+  // === TASK TOGGLE ===
+  function toggleTask(el) {
+    el.classList.toggle('done');
+    const check = el.querySelector('.task-check');
+    check.textContent = el.classList.contains('done') ? '✓' : '';
+  }
+
+  // === CHAT ===
+  const responses = {
+    schedule: [
+      "네, 오늘 일정을 확인했습니다. 14시에 팀 미팅이 있고, 17시 30분에 보고서 제출 마감이 있습니다.",
+      "오늘 남은 일정: 오후 2시 스프린트 리뷰, 5시 30분 마감입니다. 준비 도와드릴까요?"
+    ],
+    search: [
+      "인터넷 검색을 실행합니다... 최신 AI 동향을 분석 중입니다. GPT-5, Claude 4, Gemini Ultra 관련 주요 업데이트가 있습니다.",
+      "검색 완료. 원하시는 키워드로 더 구체적인 검색을 원하시면 말씀해 주세요."
+    ],
+    file: [
+      "파일 작업을 도와드리겠습니다. 요약, 편집, 변환 중 어떤 작업이 필요하신가요?",
+      "문서를 분석 중입니다. 주요 내용을 요약해 드릴까요?"
+    ],
+    alarm: [
+      "알림이 설정되었습니다. 지정하신 시간에 알려드리겠습니다.",
+      "리마인더를 추가했습니다. 다른 일정도 설정하시겠습니까?"
+    ],
+    default: [
+      "이해했습니다. 처리하겠습니다, 선생님.",
+      "명령을 접수했습니다. 최선을 다해 도와드리겠습니다.",
+      "알겠습니다. 그 업무를 진행하겠습니다.",
+      "분석 중입니다... 잠시만 기다려 주십시오.",
+      "네, 도와드리겠습니다. 어떤 방식으로 진행할까요?"
+    ]
+  };
+
+  function getResponse(text) {
+    const t = text.toLowerCase();
+    if(t.includes('일정')||t.includes('미팅')||t.includes('스케줄')) return responses.schedule[Math.floor(Math.random()*responses.schedule.length)];
+    if(t.includes('검색')||t.includes('뉴스')||t.includes('찾아')) return responses.search[Math.floor(Math.random()*responses.search.length)];
+    if(t.includes('파일')||t.includes('문서')||t.includes('요약')) return responses.file[Math.floor(Math.random()*responses.file.length)];
+    if(t.includes('알림')||t.includes('리마인더')||t.includes('알려')) return responses.alarm[Math.floor(Math.random()*responses.alarm.length)];
+    return responses.default[Math.floor(Math.random()*responses.default.length)];
+  }
+
+  function addMsg(text, isUser) {
+    const box = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'msg ' + (isUser ? 'user' : 'jarvis');
+    const now = new Date();
+    const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    div.innerHTML = `
+      <div class="msg-avatar">${isUser ? '나' : 'AI'}</div>
+      <div>
+        <div class="msg-bubble">${text}</div>
+        <div class="msg-meta">${isUser ? '나' : 'JARVIS'} · ${time}</div>
+      </div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function addTyping() {
+    const box = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'msg jarvis'; div.id = 'typingMsg';
+    div.innerHTML = `<div class="msg-avatar">AI</div><div><div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div></div>`;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return div;
+  }
+
+  function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if(!text) return;
+    addMsg(text, true);
+    input.value = '';
+    const typing = addTyping();
+    setTimeout(() => {
+      typing.remove();
+      addMsg(getResponse(text), false);
+    }, 900 + Math.random()*600);
+  }
+
+  function handleKey(e) { if(e.key==='Enter') sendMessage(); }
+
+  function useHint(el) {
+    document.getElementById('chatInput').value = el.textContent.replace(/^[^\s]+\s/,'');
+    document.getElementById('chatInput').focus();
+  }
+
+  // === VOICE ===
+  let voiceActive = false;
+  function toggleVoice() {
+    voiceActive = !voiceActive;
+    const btn = document.getElementById('voiceBtn');
+    btn.classList.toggle('active', voiceActive);
+    if(voiceActive) {
+      setTimeout(()=>{
+        voiceActive = false;
+        btn.classList.remove('active');
+        document.getElementById('chatInput').value = '내일 오전 10시에 팀 미팅 일정 추가해줘';
+      }, 2000);
+    }
+  }
+
+  // === QUICK ACTIONS ===
+  function quickAction(type) {
+    const msgs = {
+      schedule: '📅 일정 추가',
+      file: '📄 파일 작업',
+      alarm: '⏰ 알림 설정',
+      summary: '🧠 요약 분석'
+    };
+    document.getElementById('chatInput').value = msgs[type] + ' — 도움이 필요합니다';
+    document.getElementById('chatInput').focus();
+  }
+
+  function focusSearch() {
+    document.getElementById('chatInput').value = '🔍 검색: ';
+    document.getElementById('chatInput').focus();
+  }
+
+  // === CUSTOMIZE MODAL ===
+  function openCustomize() {
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function closeCustomize() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+  function closeModalBg(e) {
+    if(e.target===document.getElementById('modalOverlay')) closeCustomize();
+  }
+
+  let currentColor = '#00d4ff';
+  let currentAccent = '#00fff0';
+
+  function pickColor(el) {
+    document.querySelectorAll('.color-pick').forEach(p=>p.classList.remove('active'));
+    el.classList.add('active');
+    currentColor = el.dataset.color;
+    currentAccent = el.dataset.accent;
+  }
+
+  function applyCustomize() {
+    const name = document.getElementById('nameInput').value || 'J.A.R.V.I.S';
+    document.getElementById('charName').textContent = name;
+    document.querySelector('.logo').textContent = name;
+
+    // Apply color
+    document.documentElement.style.setProperty('--holo-blue', currentColor);
+    document.documentElement.style.setProperty('--holo-cyan', currentAccent);
+
+    addMsg(`커스터마이징이 완료되었습니다. 이제 저는 "${name}"입니다. 도와드릴 준비가 되었습니다.`, false);
+    closeCustomize();
+  }
+</script>
+</body>
+</html>
