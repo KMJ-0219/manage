@@ -190,14 +190,14 @@ ul { list-style: none; }
 
 /* ── HERO ─────────────────────────────────── */
 .hero {
-  min-height: 100vh;
+  min-height: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   position: relative;
   overflow: hidden;
-  padding: calc(var(--gnb-h) + 40px) 24px 80px;
+  padding: calc(var(--gnb-h) + 48px) 24px 48px;
   text-align: center;
 }
 .hero-bg {
@@ -242,21 +242,21 @@ ul { list-style: none; }
 .hero-content { position: relative; z-index: 1; }
 .hero-eyebrow {
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--accent);
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   opacity: 0;
   animation: fadeUp 0.8s 0.2s forwards;
 }
 .hero-title {
-  font-size: clamp(2.8rem, 8vw, 5.5rem);
+  font-size: clamp(2rem, 6vw, 3.8rem);
   font-weight: 900;
   line-height: 1.05;
   letter-spacing: -0.04em;
   color: var(--text1);
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   opacity: 0;
   animation: fadeUp 0.8s 0.35s forwards;
 }
@@ -286,7 +286,7 @@ ul { list-style: none; }
   z-index: 1;
   display: flex;
   gap: 12px;
-  margin-top: 56px;
+  margin-top: 32px;
   flex-wrap: wrap;
   justify-content: center;
   opacity: 0;
@@ -296,8 +296,8 @@ ul { list-style: none; }
   background: var(--surface);
   border: 1px solid var(--border2);
   border-radius: var(--radius);
-  padding: 20px 24px;
-  min-width: 140px;
+  padding: 14px 20px;
+  min-width: 130px;
   text-align: center;
   transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
   cursor: pointer;
@@ -309,16 +309,16 @@ ul { list-style: none; }
 }
 .stat-label {
   display: block;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: var(--text3);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .stat-num {
   display: block;
   font-family: var(--font-mono);
-  font-size: 2rem;
+  font-size: 1.7rem;
   font-weight: 700;
   color: var(--accent);
   line-height: 1;
@@ -362,14 +362,14 @@ ul { list-style: none; }
 .main-grid {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 48px 24px 80px;
+  padding: 24px 24px 60px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-areas:
     "schedule exam"
     "calendar calendar"
     "quick quick";
-  gap: 20px;
+  gap: 16px;
 }
 .card-schedule { grid-area: schedule; }
 .card-exam     { grid-area: exam; }
@@ -384,7 +384,15 @@ ul { list-style: none; }
       "exam"
       "calendar"
       "quick";
+    padding: 16px 16px 48px;
+    gap: 12px;
   }
+  .hero {
+    padding: calc(var(--gnb-h) + 28px) 16px 32px;
+  }
+  .hero-stats { margin-top: 24px; gap: 8px; }
+  .stat-card { padding: 10px 14px; min-width: 110px; }
+  .stat-num { font-size: 1.4rem; }
 }
 
 /* ── 카드 ─────────────────────────────────── */
@@ -392,15 +400,15 @@ ul { list-style: none; }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 24px;
+  padding: 18px 20px;
   transition: border-color 0.3s;
 }
 .card:hover { border-color: var(--border2); }
 .card-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 14px;
   flex-wrap: wrap;
 }
 .card-title {
@@ -799,13 +807,13 @@ ul { list-style: none; }
 
 /* ── 모바일 캘린더 최적화 ──────────────────── */
 @media (max-width: 768px) {
-  /* 카드 패딩 줄이기 */
-  .card-calendar { padding: 16px 12px; }
+  /* 카드 패딩 */
+  .card-calendar { padding: 14px 10px; }
 
   /* 캘린더 헤더 컨트롤을 두 줄로 정리 */
   .card-calendar .card-header {
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
   }
   .calendar-controls {
     order: 3;
@@ -835,7 +843,7 @@ ul { list-style: none; }
     padding: 1px 3px;
   }
 
-  /* 이벤트 칩 → 컬러 도트만 표시 (텍스트 overflow 없앰) */
+  /* 이벤트 칩 → 컬러 도트만 표시 */
   .cal-event-chip {
     font-size: 0;
     padding: 0;
