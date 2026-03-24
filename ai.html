@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J.A.R.V.I.S �� Personal AI Assistant</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Noto+Sans+KR:wght@300;400;500&display=swap');
+
+  :root {
+    --cyan: #00d4ff;
+    --cyan-dim: #007a99;
+    --blue: #0066ff;
+    --dark: #020b14;
+    --darker: #010810;
+    --panel: rgba(0, 20, 40, 0.85);
+    --border: rgba(0, 212, 255, 0.25);
+    --glow: 0 0 20px rgba(0, 212, 255, 0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--darker);
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--cyan);
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  /* 諛곌꼍 洹몃━�� */
+  .bg-grid {
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .bg-radial {
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at 50% 110%, rgba(0,100,255,0.15) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  /* �ㅼ틪�쇱씤 */
+  .scanlines {
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+    pointer-events: none; z-index: 1;
+  }
+
+  /* 諛뷀깢�붾㈃ �곸뿭 */
+  #desktop {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2;
+    overflow: hidden;
+  }
+
+  /* ===== 罹먮┃�� ===== */
+  #character {
+    position: absolute;
+    bottom: 80px;
+    left: 200px;
+    width: 60px;
+    cursor: pointer;
+    z-index: 10;
+    transition: transform 0.1s;
+    filter: drop-shadow(0 0 12px rgba(0,212,255,0.8));
+  }
+
+  #character:hover { transform: scale(1.1); }
+
+  .char-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* 癒몃━ */
+  .char-head {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1a3a5c, #0d2035);
+    border: 2px solid var(--cyan);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 15px rgba(0,212,255,0.6);
+  }
+
+  .char-face {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 28px; height: 28px;
+  }
+
+  /* 而ㅼ뒪�� �쇨뎬 �대え吏� �ㅽ��� */
+  .char-eyes {
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 4px 0;
+  }
+  .char-eye {
+    width: 6px; height: 6px;
+    background: var(--cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 6px var(--cyan);
+    animation: blink 4s infinite;
+  }
+  .char-mouth {
+    width: 12px; height: 4px;
+    border-bottom: 2px solid var(--cyan);
+    border-radius: 0 0 6px 6px;
+    margin: 4px auto 0;
+    box-shadow: 0 0 4px var(--cyan);
+  }
+
+  /* �ㅼ뼱 */
+  .char-hair {
+    position: absolute;
+    top: -4px; left: 50%;
+    transform: translateX(-50%);
+    width: 30px; height: 14px;
+    border-radius: 50% 50% 0 0;
+    background: v-bind;
+  }
+
+  /* 紐명넻 */
+  .char-body {
+    width: 40px; height: 44px;
+    border-radius: 8px 8px 4px 4px;
+    background: linear-gradient(180deg, #0d3060, #071a35);
+    border: 1.5px solid rgba(0,212,255,0.5);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0,212,255,0.3);
+    margin-top: 2px;
+  }
+
+  .char-chest-light {
+    position: absolute;
+    top: 10px; left: 50%;
+    transform: translateX(-50%);
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 12px var(--cyan), 0 0 25px rgba(0,212,255,0.6);
+    animation: pulse-chest 2s infinite;
+  }
+
+  /* �ㅻ━ */
+  .char-legs {
+    display: flex;
+    gap: 4px;
+    margin-top: 2px;
+  }
+  .char-leg {
+    width: 14px; height: 20px;
+    background: linear-gradient(180deg, #0d2a50, #071525);
+    border: 1px solid rgba(0,212,255,0.4);
+    border-radius: 2px 2px 4px 4px;
+  }
+
+  /* 嫄룰린 �좊땲硫붿씠�� */
+  .char-leg:first-child { animation: walk-l 0.5s infinite; }
+  .char-leg:last-child  { animation: walk-r 0.5s infinite; }
+  .char-body { animation: body-bob 0.5s infinite; }
+
+  .character-paused .char-leg:first-child,
+  .character-paused .char-leg:last-child,
+  .character-paused .char-body {
+    animation: none;
+  }
+
+  @keyframes walk-l {
+    0%,100% { transform: rotate(10deg); }
+    50%      { transform: rotate(-10deg); }
+  }
+  @keyframes walk-r {
+    0%,100% { transform: rotate(-10deg); }
+    50%      { transform: rotate(10deg); }
+  }
+  @keyframes body-bob {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-2px); }
+  }
+  @keyframes blink {
+    0%,96%,100% { transform: scaleY(1); }
+    98%          { transform: scaleY(0.1); }
+  }
+  @keyframes pulse-chest {
+    0%,100% { opacity: 1; box-shadow: 0 0 12px var(--cyan); }
+    50%      { opacity: 0.5; box-shadow: 0 0 4px var(--cyan); }
+  }
+
+  /* 留먰뭾�� */
+  #speech-bubble {
+    position: absolute;
+    bottom: 155px;
+    left: 180px;
+    background: var(--panel);
+    border: 1px solid var(--cyan);
+    border-radius: 12px 12px 12px 2px;
+    padding: 10px 14px;
+    max-width: 280px;
+    min-width: 150px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--cyan);
+    box-shadow: var(--glow);
+    backdrop-filter: blur(10px);
+    z-index: 11;
+    display: none;
+    line-height: 1.6;
+  }
+
+  #speech-bubble.visible { display: block; animation: bubble-in 0.2s ease; }
+
+  @keyframes bubble-in {
+    from { opacity: 0; transform: scale(0.8) translateY(10px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  /* �대쫫 �쒓렇 */
+  .char-name {
+    position: absolute;
+    bottom: -20px; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    color: var(--cyan-dim);
+    white-space: nowrap;
+    letter-spacing: 2px;
+  }
+
+  /* ===== �곷떒 HUD ===== */
+  #hud-top {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 50px;
+    background: linear-gradient(180deg, rgba(0,10,25,0.95), rgba(0,10,25,0.6));
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+
+  .hud-logo {
+    font-family: 'Orbitron', monospace;
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 6px;
+    color: var(--cyan);
+    text-shadow: 0 0 20px var(--cyan);
+  }
+
+  .hud-logo span { color: rgba(0,212,255,0.4); }
+
+  .hud-status {
+    margin-left: 30px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: rgba(0,212,255,0.6);
+    letter-spacing: 1px;
+  }
+
+  .hud-status .dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #00ff88;
+    margin-right: 6px;
+    box-shadow: 0 0 8px #00ff88;
+    animation: pulse-dot 2s infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.4; }
+  }
+
+  .hud-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .hud-time {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    color: var(--cyan);
+  }
+
+  /* ===== �섎떒 �쒖뒪�щ컮 ===== */
+  #taskbar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 60px;
+    background: rgba(0,10,25,0.92);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+
+  .task-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(0,212,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: rgba(0,212,255,0.7);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+
+  .task-btn:hover, .task-btn.active {
+    background: rgba(0,212,255,0.15);
+    border-color: var(--cyan);
+    color: var(--cyan);
+    box-shadow: var(--glow);
+  }
+
+  .task-btn .icon { font-size: 16px; }
+
+  /* ===== 梨꾪똿 �⑤꼸 ===== */
+  #chat-panel {
+    position: fixed;
+    right: 24px;
+    top: 70px;
+    bottom: 80px;
+    width: 360px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    z-index: 50;
+    backdrop-filter: blur(16px);
+    box-shadow: -4px 0 40px rgba(0,212,255,0.1);
+    transform: translateX(400px);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  #chat-panel.open { transform: translateX(0); }
+
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .panel-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--cyan);
+  }
+
+  .panel-close {
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--cyan-dim);
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+  .panel-close:hover { border-color: var(--cyan); color: var(--cyan); }
+
+  #chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--cyan-dim) transparent;
+  }
+
+  .msg {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.6;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .msg.user {
+    align-self: flex-end;
+    background: rgba(0,100,255,0.2);
+    border: 1px solid rgba(0,100,255,0.4);
+    color: #88ccff;
+  }
+
+  .msg.ai {
+    align-self: flex-start;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid var(--border);
+    color: var(--cyan);
+  }
+
+  .msg .msg-sender {
+    font-size: 10px;
+    opacity: 0.5;
+    margin-bottom: 4px;
+    letter-spacing: 2px;
+  }
+
+  .typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 10px 14px;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    align-self: flex-start;
+    width: fit-content;
+  }
+
+  .typing-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--cyan);
+    animation: typing 1.2s infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typing {
+    0%,60%,100% { transform: translateY(0); opacity: 0.4; }
+    30%          { transform: translateY(-6px); opacity: 1; }
+  }
+
+  .chat-input-wrap {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  #chat-input {
+    flex: 1;
+    background: rgba(0,212,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    resize: none;
+    max-height: 100px;
+    transition: border-color 0.2s;
+  }
+
+  #chat-input:focus { border-color: var(--cyan); box-shadow: var(--glow); }
+  #chat-input::placeholder { color: rgba(0,212,255,0.3); }
+
+  .send-btn {
+    background: rgba(0,212,255,0.1);
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .send-btn:hover { background: rgba(0,212,255,0.25); box-shadow: var(--glow); }
+
+  .mic-btn {
+    background: rgba(0,212,255,0.1);
+    border: 1px solid var(--border);
+    color: rgba(0,212,255,0.6);
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .mic-btn:hover, .mic-btn.active {
+    background: rgba(255,50,50,0.15);
+    border-color: #ff3333;
+    color: #ff5555;
+    box-shadow: 0 0 15px rgba(255,50,50,0.3);
+  }
+
+  /* ===== �좎씪 �⑤꼸 ===== */
+  #todo-panel {
+    position: fixed;
+    left: 24px;
+    top: 70px;
+    width: 300px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    z-index: 50;
+    backdrop-filter: blur(16px);
+    transform: translateX(-340px);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height: calc(100vh - 150px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  #todo-panel.open { transform: translateX(0); }
+
+  .todo-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--cyan-dim) transparent;
+  }
+
+  .todo-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: rgba(0,212,255,0.04);
+    border: 1px solid rgba(0,212,255,0.1);
+    border-radius: 8px;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .todo-item:hover { border-color: rgba(0,212,255,0.3); background: rgba(0,212,255,0.08); }
+
+  .todo-item.done { opacity: 0.4; }
+  .todo-item.done .todo-text { text-decoration: line-through; }
+
+  .todo-check {
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--cyan-dim);
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    transition: all 0.2s;
+  }
+
+  .todo-item.done .todo-check {
+    background: var(--cyan);
+    border-color: var(--cyan);
+    color: var(--dark);
+  }
+
+  .todo-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: rgba(0,212,255,0.8);
+    flex: 1;
+  }
+
+  .todo-priority {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+  }
+
+  .priority-high { background: rgba(255,80,80,0.2); color: #ff5555; border: 1px solid rgba(255,80,80,0.3); }
+  .priority-mid  { background: rgba(255,180,0,0.2); color: #ffbb00; border: 1px solid rgba(255,180,0,0.3); }
+  .priority-low  { background: rgba(0,200,100,0.2); color: #00cc66; border: 1px solid rgba(0,200,100,0.3); }
+
+  .todo-add-wrap {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+  }
+
+  .todo-input {
+    flex: 1;
+    background: rgba(0,212,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    outline: none;
+  }
+
+  .todo-input:focus { border-color: var(--cyan); }
+  .todo-input::placeholder { color: rgba(0,212,255,0.3); }
+
+  .todo-add-btn {
+    background: rgba(0,212,255,0.1);
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    transition: all 0.2s;
+  }
+  .todo-add-btn:hover { background: rgba(0,212,255,0.25); }
+
+  /* ===== 而ㅼ뒪�� �⑤꼸 ===== */
+  #custom-panel {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    width: 440px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    z-index: 200;
+    backdrop-filter: blur(16px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s;
+  }
+
+  #custom-panel.open {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .custom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .custom-group label {
+    display: block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: rgba(0,212,255,0.5);
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+
+  .color-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .color-swatch {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .color-swatch:hover, .color-swatch.selected {
+    border-color: white;
+    transform: scale(1.2);
+    box-shadow: 0 0 10px currentColor;
+  }
+
+  .style-options {
+    display: flex;
+    gap: 8px;
+  }
+
+  .style-btn {
+    padding: 6px 12px;
+    background: rgba(0,212,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: rgba(0,212,255,0.6);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .style-btn:hover, .style-btn.selected {
+    border-color: var(--cyan);
+    color: var(--cyan);
+    background: rgba(0,212,255,0.12);
+  }
+
+  .name-input {
+    width: 100%;
+    background: rgba(0,212,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    outline: none;
+  }
+  .name-input:focus { border-color: var(--cyan); }
+
+  /* ===== �뚮┝ �좎뒪�� ===== */
+  #toast-container {
+    position: fixed;
+    top: 70px;
+    right: 24px;
+    z-index: 300;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .toast {
+    background: var(--panel);
+    border: 1px solid var(--cyan);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--cyan);
+    box-shadow: var(--glow);
+    backdrop-filter: blur(12px);
+    animation: toast-in 0.3s ease, toast-out 0.3s ease 2.7s forwards;
+    min-width: 200px;
+  }
+
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateX(30px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes toast-out {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(30px); }
+  }
+
+  /* ===== 寃��� �⑤꼸 ===== */
+  #search-panel {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%) scale(0.95);
+    width: 560px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    z-index: 150;
+    backdrop-filter: blur(16px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s;
+  }
+
+  #search-panel.open {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateX(-50%) scale(1);
+  }
+
+  .search-input-wrap {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .search-icon { font-size: 18px; color: var(--cyan-dim); }
+
+  #search-input {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 16px;
+    outline: none;
+  }
+
+  #search-input::placeholder { color: rgba(0,212,255,0.3); }
+
+  #search-results {
+    padding: 12px 16px;
+    min-height: 80px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: rgba(0,212,255,0.7);
+    line-height: 1.8;
+  }
+
+  /* �뚮줈�� �뚰떚�� */
+  .particle {
+    position: fixed;
+    pointer-events: none;
+    border-radius: 50%;
+    background: var(--cyan);
+    opacity: 0;
+    animation: float-particle linear infinite;
+  }
+
+  @keyframes float-particle {
+    0%   { opacity: 0; transform: translateY(0) scale(0); }
+    10%  { opacity: 0.6; transform: translateY(-20px) scale(1); }
+    90%  { opacity: 0.2; }
+    100% { opacity: 0; transform: translateY(-120px) scale(0); }
+  }
+
+  /* 罹먮┃�� 誘몃━蹂닿린 */
+  #char-preview {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .preview-char { transform: scale(1.8); transform-origin: bottom center; margin-bottom: 30px; }
+
+  /* �묐떟 濡쒕뵫 */
+  .loading-bar {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    animation: loading-sweep 1.5s linear infinite;
+  }
+
+  @keyframes loading-sweep {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(100%); }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-radial"></div>
+<div class="scanlines"></div>
+
+<!-- �곷떒 HUD -->
+<div id="hud-top">
+  <div class="hud-logo">J<span>.</span>A<span>.</span>R<span>.</span>V<span>.</span>I<span>.</span>S</div>
+  <div class="hud-status"><span class="dot"></span>ONLINE 쨌 AI CORE ACTIVE</div>
+  <div class="hud-right">
+    <div class="hud-time" id="hud-clock">--:--:--</div>
+  </div>
+</div>
+
+<!-- 諛뷀깢�붾㈃ -->
+<div id="desktop">
+  <!-- 罹먮┃�� -->
+  <div id="character" onclick="toggleChat()">
+    <div class="char-wrap">
+      <div class="char-head">
+        <div class="char-hair" id="char-hair" style="background:#1a1a1a; position:absolute; top:-4px; left:50%; transform:translateX(-50%); width:30px; height:14px; border-radius:50% 50% 0 0;"></div>
+        <div class="char-face">
+          <div class="char-eyes">
+            <div class="char-eye"></div>
+            <div class="char-eye"></div>
+          </div>
+          <div class="char-mouth"></div>
+        </div>
+      </div>
+      <div class="char-body" id="char-body">
+        <div class="char-chest-light"></div>
+      </div>
+      <div class="char-legs">
+        <div class="char-leg" id="leg-l"></div>
+        <div class="char-leg" id="leg-r"></div>
+      </div>
+      <div class="char-name" id="char-name-tag">JARVIS</div>
+    </div>
+  </div>
+
+  <!-- 留먰뭾�� -->
+  <div id="speech-bubble"></div>
+</div>
+
+<!-- 梨꾪똿 �⑤꼸 -->
+<div id="chat-panel">
+  <div class="panel-header">
+    <span style="font-size:18px">�쨼</span>
+    <span class="panel-title">AI COMMAND</span>
+    <button class="panel-close" onclick="toggleChat()">��</button>
+  </div>
+  <div id="chat-messages">
+    <div class="msg ai">
+      <div class="msg-sender">JARVIS</div>
+      �덈뀞�섏꽭��, ���� �뱀떊�� AI 鍮꾩꽌�낅땲��. 臾댁뾿�� �꾩��쒕┫源뚯슂? �좎씪 異붽�, 寃���, �쇱젙 愿�由� �깆쓣 留↔꺼蹂댁꽭��.
+    </div>
+  </div>
+  <div class="chat-input-wrap">
+    <button class="mic-btn" id="mic-btn" onclick="toggleMic()" title="�뚯꽦 �몄떇">�렎</button>
+    <textarea id="chat-input" placeholder="紐낅졊�� �낅젰�섏꽭��..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button class="send-btn" onclick="sendMessage()">��</button>
+  </div>
+</div>
+
+<!-- �좎씪 �⑤꼸 -->
+<div id="todo-panel">
+  <div class="panel-header">
+    <span style="font-size:18px">�뱥</span>
+    <span class="panel-title">TASK LIST</span>
+    <button class="panel-close" onclick="toggleTodo()">��</button>
+  </div>
+  <div class="todo-list" id="todo-list"></div>
+  <div class="todo-add-wrap">
+    <input class="todo-input" id="todo-input" placeholder="�� �좎씪 異붽�..." onkeydown="if(event.key==='Enter') addTodo()">
+    <button class="todo-add-btn" onclick="addTodo()">+</button>
+  </div>
+</div>
+
+<!-- 而ㅼ뒪�� �⑤꼸 -->
+<div id="custom-panel">
+  <div class="panel-header">
+    <span style="font-size:18px">�렓</span>
+    <span class="panel-title">CUSTOMIZE</span>
+    <button class="panel-close" onclick="toggleCustom()">��</button>
+  </div>
+  <div id="char-preview">
+    <!-- 誘몃━蹂닿린�� JS濡� �뚮뜑留� -->
+  </div>
+  <div class="custom-grid">
+    <div class="custom-group">
+      <label>�ㅼ뼱 �됱긽</label>
+      <div class="color-options" id="hair-colors">
+        <div class="color-swatch selected" style="background:#1a1a1a" data-val="#1a1a1a" onclick="setHairColor(this)"></div>
+        <div class="color-swatch" style="background:#8B4513" data-val="#8B4513" onclick="setHairColor(this)"></div>
+        <div class="color-swatch" style="background:#DAA520" data-val="#DAA520" onclick="setHairColor(this)"></div>
+        <div class="color-swatch" style="background:#cc0000" data-val="#cc0000" onclick="setHairColor(this)"></div>
+        <div class="color-swatch" style="background:#888" data-val="#888" onclick="setHairColor(this)"></div>
+        <div class="color-swatch" style="background:#00d4ff" data-val="#00d4ff" onclick="setHairColor(this)"></div>
+      </div>
+    </div>
+    <div class="custom-group">
+      <label>�� �됱긽</label>
+      <div class="color-options" id="suit-colors">
+        <div class="color-swatch selected" style="background:#0d3060" data-val="#0d3060,#071a35" onclick="setSuitColor(this)"></div>
+        <div class="color-swatch" style="background:#800000" data-val="#600010,#300005" onclick="setSuitColor(this)"></div>
+        <div class="color-swatch" style="background:#004400" data-val="#003300,#001500" onclick="setSuitColor(this)"></div>
+        <div class="color-swatch" style="background:#333" data-val="#222,#111" onclick="setSuitColor(this)"></div>
+        <div class="color-swatch" style="background:#551a8b" data-val="#3d1266,#1e0933" onclick="setSuitColor(this)"></div>
+        <div class="color-swatch" style="background:#b8860b" data-val="#8a6200,#4a3500" onclick="setSuitColor(this)"></div>
+      </div>
+    </div>
+    <div class="custom-group">
+      <label>泥댄삎</label>
+      <div class="style-options">
+        <div class="style-btn selected" onclick="setBody(this,'normal')">蹂댄넻</div>
+        <div class="style-btn" onclick="setBody(this,'slim')">�щ┝</div>
+        <div class="style-btn" onclick="setBody(this,'big')">鍮�</div>
+      </div>
+    </div>
+    <div class="custom-group">
+      <label>AI �대쫫</label>
+      <input class="name-input" id="ai-name-input" value="JARVIS" maxlength="12" oninput="updateAiName(this.value)">
+    </div>
+  </div>
+  <div style="padding:0 16px 16px;">
+    <div class="style-btn" style="width:100%;text-align:center;padding:10px" onclick="toggleCustom()">�� �곸슜�섍린</div>
+  </div>
+</div>
+
+<!-- 寃��� �⑤꼸 -->
+<div id="search-panel">
+  <div class="search-input-wrap">
+    <span class="search-icon">�뵇</span>
+    <input id="search-input" placeholder="寃��됱뼱瑜� �낅젰�섏꽭��..." onkeydown="if(event.key==='Enter') doSearch()">
+    <button class="panel-close" onclick="toggleSearch()">��</button>
+  </div>
+  <div id="search-results">寃��됱뼱瑜� �낅젰�섍퀬 Enter瑜� �꾨Ⅴ�몄슂.</div>
+</div>
+
+<!-- �뚮┝ 而⑦뀒�대꼫 -->
+<div id="toast-container"></div>
+
+<!-- �섎떒 �쒖뒪�щ컮 -->
+<div id="taskbar">
+  <div class="task-btn" onclick="toggleChat()" id="btn-chat"><span class="icon">�뮠</span> ����</div>
+  <div class="task-btn" onclick="toggleTodo()" id="btn-todo"><span class="icon">�뱥</span> �좎씪</div>
+  <div class="task-btn" onclick="toggleSearch()" id="btn-search"><span class="icon">�뵇</span> 寃���</div>
+  <div class="task-btn" onclick="toggleCustom()" id="btn-custom"><span class="icon">�렓</span> 而ㅼ뒪��</div>
+  <div class="task-btn" onclick="showReminder()" id="btn-remind"><span class="icon">��</span> �뚮┝�ㅼ젙</div>
+  <div style="margin-left:auto; font-family:'Share Tech Mono',monospace; font-size:11px; color:rgba(0,212,255,0.4); letter-spacing:1px;">
+    DESKTOP AI v1.0
+  </div>
+</div>
+
+<script>
+// ===== �곹깭 =====
+const state = {
+  chatOpen: false,
+  todoOpen: false,
+  customOpen: false,
+  searchOpen: false,
+  charName: 'JARVIS',
+  hairColor: '#1a1a1a',
+  suitTop: '#0d3060',
+  suitBot: '#071a35',
+  bodyType: 'normal',
+  todos: [
+    { id:1, text:'�꾨줈�앺듃 湲고쉷�� �묒꽦', done:false, priority:'high' },
+    { id:2, text:'�� 誘명똿 以�鍮�', done:false, priority:'mid' },
+    { id:3, text:'�대찓�� �뚯떊�섍린', done:true, priority:'low' },
+  ],
+  micActive: false,
+  charX: 200,
+  charDir: 1,
+  charMoving: true,
+  charPaused: false,
+};
+
+// ===== �쒓퀎 =====
+function updateClock() {
+  const now = new Date();
+  document.getElementById('hud-clock').textContent =
+    now.toLocaleTimeString('ko-KR', {hour12:false});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ===== 罹먮┃�� �대룞 =====
+const char = document.getElementById('character');
+const desktop = document.getElementById('desktop');
+
+function moveCharacter() {
+  if (state.charPaused) return;
+
+  const maxX = window.innerWidth - 80;
+  state.charX += state.charDir * 1.2;
+
+  if (state.charX >= maxX) { state.charDir = -1; flipChar(); }
+  if (state.charX <= 10)   { state.charDir =  1; flipChar(); }
+
+  char.style.left = state.charX + 'px';
+
+  // �쒕뜡�쇰줈 �좉퉸 硫덉텛湲�
+  if (Math.random() < 0.002) {
+    pauseChar();
+  }
+}
+
+function flipChar() {
+  char.style.transform = state.charDir === -1 ? 'scaleX(-1)' : 'scaleX(1)';
+}
+
+function pauseChar() {
+  state.charPaused = true;
+  char.querySelector('.char-wrap').classList.add('character-paused');
+  const phrases = [
+    '�좉퉸, 萸붽� �앷컖以�...', '吏�湲� 萸먰븯�몄슂? ��', '紐낅졊留� �대━�몄슂!',
+    '�쒖뒪�� �먭� 以�...', '��湲� 以묒엯�덈떎.', '萸붽� �꾩��쒕┫源뚯슂?'
+  ];
+  showBubble(phrases[Math.floor(Math.random()*phrases.length)]);
+  setTimeout(() => {
+    state.charPaused = false;
+    char.querySelector('.char-wrap').classList.remove('character-paused');
+    hideBubble();
+  }, 2500);
+}
+
+setInterval(moveCharacter, 16);
+
+// ===== 留먰뭾�� =====
+const bubble = document.getElementById('speech-bubble');
+
+function showBubble(text, duration = 2500) {
+  bubble.textContent = text;
+  bubble.classList.add('visible');
+  syncBubble();
+  if (duration > 0) setTimeout(hideBubble, duration);
+}
+
+function hideBubble() { bubble.classList.remove('visible'); }
+
+function syncBubble() {
+  const x = state.charX;
+  bubble.style.left = (x - 20) + 'px';
+}
+
+// 留먰뭾�� �꾩튂瑜� 罹먮┃�곗� �숆린��
+setInterval(syncBubble, 50);
+
+// ===== 梨꾪똿 �⑤꼸 =====
+function toggleChat() {
+  state.chatOpen = !state.chatOpen;
+  document.getElementById('chat-panel').classList.toggle('open', state.chatOpen);
+  document.getElementById('btn-chat').classList.toggle('active', state.chatOpen);
+  if (state.chatOpen) {
+    setTimeout(() => document.getElementById('chat-input').focus(), 300);
+    showBubble('臾댁뾿�� �꾩��쒕┫源뚯슂?', 2000);
+  }
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  addMessage(text, 'user');
+  input.value = '';
+  input.style.height = 'auto';
+
+  // �낅젰�먯꽌 �좎씪 異붽� 媛먯�
+  if (text.match(/�좎씪|異붽�|task|todo/i)) {
+    const taskMatch = text.match(/[""'](.+)[""']|異붽�\s*[:]?\s*(.+)|�좎씪[:]?\s*(.+)/);
+    if (taskMatch) {
+      const task = taskMatch[1] || taskMatch[2] || taskMatch[3];
+      if (task) {
+        addTodoItem(task.trim(), 'mid');
+        addMessage(`�뚭쿋�듬땲��! "${task.trim()}"瑜� �좎씪 紐⑸줉�� 異붽��덉뒿�덈떎. ��`, 'ai');
+        showBubble('�좎씪 異붽� �꾨즺!', 2000);
+        return;
+      }
+    }
+  }
+
+  // AI �묐떟 (Claude API �곕룞 遺�遺�)
+  showTyping();
+  showBubble('泥섎━ 以�...', -1);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `�뱀떊�� "${state.charName}"�대씪�� �대쫫�� �ㅻ쭏�명븳 AI 鍮꾩꽌�낅땲��. �꾩씠�몃㎤�� �먮퉬�ㅼ쿂�� �좊뒫�섍퀬 媛꾧껐�섍쾶 �묐떟�⑸땲��. �ъ슜�먯쓽 �낅Т瑜� �뺢퀬, 移쒖젅�섏�留� �꾨줈�섏뀛�먰빀�덈떎. �쒓뎅�대줈 �묐떟�섏꽭��. �듬��� 2-3臾몄옣 �대궡濡� 媛꾧껐�섍쾶.`,
+        messages: [{ role: 'user', content: text }]
+      })
+    });
+    const data = await res.json();
+    hideTyping();
+    const reply = data.content?.[0]?.text || '二꾩넚�⑸땲��, �ㅻ쪟媛� 諛쒖깮�덉뒿�덈떎.';
+    addMessage(reply, 'ai');
+    showBubble('�묐떟 �꾨즺!', 1500);
+  } catch(e) {
+    hideTyping();
+    addMessage('�ㅽ듃�뚰겕 �ㅻ쪟媛� 諛쒖깮�덉뒿�덈떎. �좎떆 �� �ㅼ떆 �쒕룄�댁＜�몄슂.', 'ai');
+  }
+}
+
+function addMessage(text, role) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `<div class="msg-sender">${role === 'ai' ? state.charName : 'YOU'}</div>${text}`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+let typingEl = null;
+function showTyping() {
+  const msgs = document.getElementById('chat-messages');
+  typingEl = document.createElement('div');
+  typingEl.className = 'typing-indicator';
+  typingEl.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+  msgs.appendChild(typingEl);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function hideTyping() { if (typingEl) { typingEl.remove(); typingEl = null; } }
+
+// ===== 留덉씠�� =====
+let recognition = null;
+function toggleMic() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('�뚯꽦 �몄떇�� Chrome�먯꽌留� 吏��먮맗�덈떎.');
+    return;
+  }
+  if (state.micActive) {
+    recognition?.stop();
+    state.micActive = false;
+    document.getElementById('mic-btn').classList.remove('active');
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'ko-KR';
+  recognition.onresult = (e) => {
+    document.getElementById('chat-input').value = e.results[0][0].transcript;
+    state.micActive = false;
+    document.getElementById('mic-btn').classList.remove('active');
+    sendMessage();
+  };
+  recognition.onend = () => {
+    state.micActive = false;
+    document.getElementById('mic-btn').classList.remove('active');
+  };
+  recognition.start();
+  state.micActive = true;
+  document.getElementById('mic-btn').classList.add('active');
+  showBubble('�ｊ퀬 �덉뼱��...', -1);
+}
+
+// ===== �좎씪 =====
+function toggleTodo() {
+  state.todoOpen = !state.todoOpen;
+  document.getElementById('todo-panel').classList.toggle('open', state.todoOpen);
+  document.getElementById('btn-todo').classList.toggle('active', state.todoOpen);
+  if (state.todoOpen) renderTodos();
+}
+
+function renderTodos() {
+  const list = document.getElementById('todo-list');
+  list.innerHTML = state.todos.map(t => `
+    <div class="todo-item ${t.done ? 'done' : ''}" onclick="toggleTodoItem(${t.id})">
+      <div class="todo-check">${t.done ? '��' : ''}</div>
+      <div class="todo-text">${t.text}</div>
+      <div class="todo-priority priority-${t.priority === 'high' ? 'high' : t.priority === 'mid' ? 'mid' : 'low'}">
+        ${t.priority === 'high' ? 'HIGH' : t.priority === 'mid' ? 'MID' : 'LOW'}
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleTodoItem(id) {
+  const todo = state.todos.find(t => t.id === id);
+  if (todo) { todo.done = !todo.done; renderTodos(); }
+}
+
+function addTodo() {
+  const input = document.getElementById('todo-input');
+  const text = input.value.trim();
+  if (!text) return;
+  addTodoItem(text, 'mid');
+  input.value = '';
+  showToast(`�좎씪 異붽�: ${text}`);
+}
+
+function addTodoItem(text, priority) {
+  state.todos.unshift({ id: Date.now(), text, done: false, priority });
+  if (state.todoOpen) renderTodos();
+}
+
+// ===== 寃��� =====
+function toggleSearch() {
+  state.searchOpen = !state.searchOpen;
+  document.getElementById('search-panel').classList.toggle('open', state.searchOpen);
+  if (state.searchOpen) setTimeout(() => document.getElementById('search-input').focus(), 200);
+}
+
+async function doSearch() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) return;
+  const res = document.getElementById('search-results');
+  res.innerHTML = '<div class="loading-bar"></div><div style="margin-top:10px;color:rgba(0,212,255,0.5)">寃��� 以�...</div>';
+  showBubble(`"${q}" 寃��� 以�...`, -1);
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: '�ъ슜�먯쓽 寃��� 荑쇰━�� ���� �듭떖 �뺣낫瑜� 3-5以꾨줈 媛꾧껐�섍쾶 �붿빟�댁꽌 �뚮젮二쇱꽭��. �쒓뎅�대줈 �듯븯�몄슂.',
+        messages: [{ role: 'user', content: `"${q}"�� ���� �뚮젮二쇱꽭��.` }]
+      })
+    });
+    const data = await resp.json();
+    const text = data.content?.[0]?.text || '寃곌낵瑜� 媛��몄삱 �� �놁뒿�덈떎.';
+    res.innerHTML = `<div style="line-height:1.8">${text.replace(/\n/g,'<br>')}</div>`;
+    showBubble('寃��� �꾨즺!', 2000);
+  } catch(e) {
+    res.innerHTML = '<div style="color:rgba(255,80,80,0.8)">寃��� 以� �ㅻ쪟媛� 諛쒖깮�덉뒿�덈떎.</div>';
+    hideBubble();
+  }
+}
+
+// ===== �뚮┝ =====
+function showReminder() {
+  const msg = prompt('�뚮┝ �댁슜�� �낅젰�섏꽭��:');
+  if (!msg) return;
+  const delay = prompt('紐� 珥� �� �뚮┝? (湲곕낯 5珥�):', '5');
+  const sec = parseInt(delay) || 5;
+  showToast(`${sec}珥� �� �뚮┝ �ㅼ젙: ${msg}`);
+  showBubble(`${sec}珥� �꾩뿉 �뚮젮�쒕┫寃뚯슂!`, 2000);
+  setTimeout(() => {
+    showToast(`�� �뚮┝: ${msg}`);
+    showBubble(`�� ${msg}`, 3000);
+    if (Notification.permission === 'granted') {
+      new Notification(state.charName, { body: msg });
+    }
+  }, sec * 1000);
+}
+
+// ===== 而ㅼ뒪�� =====
+function toggleCustom() {
+  state.customOpen = !state.customOpen;
+  document.getElementById('custom-panel').classList.toggle('open', state.customOpen);
+}
+
+function setHairColor(el) {
+  document.querySelectorAll('#hair-colors .color-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  state.hairColor = el.dataset.val;
+  document.getElementById('char-hair').style.background = state.hairColor;
+}
+
+function setSuitColor(el) {
+  document.querySelectorAll('#suit-colors .color-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  const [top, bot] = el.dataset.val.split(',');
+  state.suitTop = top; state.suitBot = bot;
+  const body = document.getElementById('char-body');
+  body.style.background = `linear-gradient(180deg, ${top}, ${bot})`;
+  const legs = document.querySelectorAll('.char-leg');
+  legs.forEach(l => l.style.background = `linear-gradient(180deg, ${top}, ${bot})`);
+}
+
+function setBody(el, type) {
+  document.querySelectorAll('.custom-group .style-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  state.bodyType = type;
+  const body = document.getElementById('char-body');
+  if (type === 'slim')   { body.style.width = '32px'; }
+  else if (type === 'big') { body.style.width = '52px'; }
+  else                    { body.style.width = '40px'; }
+}
+
+function updateAiName(val) {
+  state.charName = val || 'JARVIS';
+  document.getElementById('char-name-tag').textContent = state.charName;
+}
+
+// ===== �좎뒪�� =====
+function showToast(msg) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3200);
+}
+
+// ===== �뚰떚�� =====
+function spawnParticle() {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  const size = Math.random() * 4 + 2;
+  p.style.cssText = `
+    width:${size}px; height:${size}px;
+    left:${Math.random()*100}vw;
+    bottom:60px;
+    animation-duration:${Math.random()*3+2}s;
+    animation-delay:${Math.random()*2}s;
+    opacity:0;
+  `;
+  document.body.appendChild(p);
+  setTimeout(() => p.remove(), 6000);
+}
+setInterval(spawnParticle, 800);
+
+// ===== 珥덇린 �몄궗 =====
+setTimeout(() => showBubble('�덈뀞�섏꽭��! �대┃�댁꽌 ���뷀븯�몄슂 �몝', 3000), 1000);
+
+// 珥덇린 �좎씪 �뚮뜑留�
+renderTodos();
+
+// �뚮┝ 沅뚰븳 �붿껌
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+</script>
+</body>
+    </html>
