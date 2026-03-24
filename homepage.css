@@ -330,6 +330,34 @@ ul { list-style: none; }
   margin-top: 4px;
 }
 
+/* 완료 stat 카드 — 진행 바 */
+.stat-progress-wrap {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  margin-top: 10px;
+  overflow: hidden;
+}
+.stat-progress-bar {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent3);
+  transition: width 0.5s ease;
+  width: 0%;
+}
+
+/* 오늘 일정 카드 헤더 완료 카운트 */
+.card-done-count {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--accent3);
+  background: rgba(52,211,153,0.1);
+  border: 1px solid rgba(52,211,153,0.25);
+  border-radius: 20px;
+  padding: 2px 10px;
+  white-space: nowrap;
+}
+
 /* ── MAIN GRID ────────────────────────────── */
 .main-grid {
   max-width: 1280px;
@@ -723,8 +751,123 @@ ul { list-style: none; }
 .cat-default { background: var(--bg3); color: var(--text3); }
 
 /* compact 모드 */
-.cal-grid.compact .cal-cell { min-height: 44px; }
+.cal-grid.compact .cal-cell { min-height: 52px; padding: 5px 6px; }
 .cal-grid.compact .cal-events { display: none; }
+
+/* compact 모드 — 완료 진행 바 */
+.cal-progress-wrap {
+  display: none;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  margin-top: 4px;
+  overflow: hidden;
+}
+.cal-progress-bar {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent3);
+  transition: width 0.3s;
+}
+.cal-grid.compact .cal-progress-wrap { display: block; }
+
+/* compact 모드 — 카테고리 도트 줄 */
+.cal-dot-row {
+  display: none;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 3px;
+}
+.cal-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.cal-grid.compact .cal-dot-row { display: flex; }
+
+/* compact 모드 — 완료 카운트 뱃지 */
+.cal-done-badge {
+  display: none;
+  font-family: var(--font-mono);
+  font-size: 0.52rem;
+  color: var(--accent3);
+  line-height: 1;
+  margin-top: 2px;
+}
+.cal-grid.compact .cal-done-badge { display: block; }
+
+/* ── 모바일 캘린더 최적화 ──────────────────── */
+@media (max-width: 768px) {
+  /* 카드 패딩 줄이기 */
+  .card-calendar { padding: 16px 12px; }
+
+  /* 캘린더 헤더 컨트롤을 두 줄로 정리 */
+  .card-calendar .card-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .calendar-controls {
+    order: 3;
+    width: 100%;
+  }
+
+  /* 셀 크기 줄이기 — 가로 공간 확보 */
+  .cal-cell {
+    min-height: 54px;
+    padding: 4px 3px;
+  }
+
+  /* 날짜 숫자 작게 */
+  .cal-date-num {
+    font-size: 0.68rem;
+    margin-bottom: 2px;
+  }
+  .cal-cell.today .cal-date-num {
+    width: 18px;
+    height: 18px;
+    font-size: 0.62rem;
+  }
+
+  /* D-day 뱃지 작게 */
+  .cal-dday-badge {
+    font-size: 0.52rem;
+    padding: 1px 3px;
+  }
+
+  /* 이벤트 칩 → 컬러 도트만 표시 (텍스트 overflow 없앰) */
+  .cal-event-chip {
+    font-size: 0;
+    padding: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+  .cal-events {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 2px;
+    align-items: center;
+  }
+  .cal-more {
+    font-size: 0.5rem;
+    padding-left: 0;
+  }
+
+  /* 요일 헤더 */
+  .cal-day-headers span {
+    font-size: 0.65rem;
+    padding: 4px 0;
+  }
+
+  /* 그리드 간격 */
+  .cal-grid { gap: 1px; }
+}
 
 /* 범례 */
 .cal-legend {
