@@ -152,17 +152,6 @@ async function loadTodaySchedule() {
     document.getElementById('statToday').textContent = data.length;
     const doneCount = data.filter(d => isDone(d)).length;
     document.getElementById('statDone').textContent = doneCount;
-
-    // 완료 진행 바 업데이트
-    const pct = data.length > 0 ? Math.round(doneCount / data.length * 100) : 0;
-    const bar = document.getElementById('statProgressBar');
-    if (bar) bar.style.width = pct + '%';
-
-    // 오늘 일정 카드 완료 카운트
-    const doneCountEl = document.getElementById('todayDoneCount');
-    if (doneCountEl) {
-      doneCountEl.textContent = data.length > 0 ? `${doneCount}/${data.length} 완료` : '';
-    }
     const list = document.getElementById('todayList');
     if (data.length === 0) {
       list.innerHTML = '<li class="empty-msg">오늘 예정된 일정이 없습니다.</li>';
@@ -263,20 +252,16 @@ async function loadExams() {
 // ==========================================
 
 async function loadCalendarData(year, month) {
-  // 달력에 표시되는 실제 첫/마지막 날 계산 (이전달 채우기 포함)
-  const firstOfMonth = new Date(year, month - 1, 1);
-  const firstDow = firstOfMonth.getDay(); // 0=일
-  const calStart = new Date(year, month - 1, 1 - firstDow);
-  calStart.setHours(0, 0, 0, 0);
-
-  const lastOfMonth = new Date(year, month, 0);
-  const lastDow = lastOfMonth.getDay();
-  const calEnd = new Date(year, month, 6 - lastDow); // 마지막 주 토요일
-  calEnd.setHours(23, 59, 59, 999);
+  const start = new Date(year, month - 1, 1);
+  start.setDate(start.getDate() - 7);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(year, month, 0);
+  end.setDate(end.getDate() + 7);
+  end.setHours(23, 59, 59, 999);
 
   try {
     const data = await supabaseFetch(
-      `schedule?s_date=gte.${toLocalISO(calStart)}&s_date=lte.${toLocalISO(calEnd)}&order=s_date.asc&limit=500`
+      `schedule?s_date=gte.${toLocalISO(start)}&s_date=lte.${toLocalISO(end)}&order=s_date.asc&limit=300`
     );
     allSchedules = data || [];
 
@@ -375,7 +360,7 @@ function buildCell(dateStr, dayNum, otherMonth, todayStr, grouped, nowDate) {
   if (dow === 6)  cls += ' sat';
 
   let ddayHtml = '';
-  if (showDday && nearestExamDate) {
+  if (nearestExamDate) {
     const examMid = new Date(nearestExamDate); examMid.setHours(0,0,0,0);
     const cellMid = parseDateStr(dateStr);
     const diff = Math.round((examMid - cellMid) / 86400000);
@@ -384,29 +369,6 @@ function buildCell(dateStr, dayNum, otherMonth, todayStr, grouped, nowDate) {
   }
 
   const items = grouped[dateStr] || [];
-  const doneItems = items.filter(i => isDone(i));
-  const totalCount = items.length;
-  const doneCount = doneItems.length;
-
-  // compact용: 카테고리 도트
-  const dotColors = { '과제': 'var(--cat-과제)', '수행': 'var(--cat-과제)', '시험': 'var(--cat-시험)', '약속': 'var(--cat-약속)' };
-  const dotsHtml = items.slice(0, 6).map(item => {
-    const color = dotColors[item.s_category] || 'var(--cat-기타)';
-    const opacity = isDone(item) ? 'opacity:0.35;' : '';
-    return `<span class="cal-dot" style="background:${color};${opacity}"></span>`;
-  }).join('');
-
-  // compact용: 진행 바 (일정 있는 날만)
-  const progressPct = totalCount > 0 ? Math.round(doneCount / totalCount * 100) : 0;
-  const progressHtml = totalCount > 0
-    ? `<div class="cal-progress-wrap"><div class="cal-progress-bar" style="width:${progressPct}%"></div></div>`
-    : '<div class="cal-progress-wrap"></div>';
-
-  // compact용: 완료 카운트 (일정 있을 때만)
-  const doneBadgeHtml = totalCount > 0
-    ? `<div class="cal-done-badge">${doneCount}/${totalCount}</div>`
-    : '<div class="cal-done-badge"></div>';
-
   const MAX_SHOW = 3;
   const shown = items.slice(0, MAX_SHOW);
   const more = items.length - MAX_SHOW;
@@ -421,9 +383,6 @@ function buildCell(dateStr, dayNum, otherMonth, todayStr, grouped, nowDate) {
       <span class="cal-date-num">${dayNum}</span>
       ${ddayHtml}
       <div class="cal-events">${chipsHtml}${moreHtml}</div>
-      <div class="cal-dot-row">${dotsHtml}</div>
-      ${progressHtml}
-      ${doneBadgeHtml}
     </div>
   `;
 }
