@@ -22,275 +22,259 @@
         <span></span><span></span><span></span>
       </button>
       <ul class="gnb-menu" id="gnbMenu">
-        <li><a href="index.html" class="gnb-link" data-label="HOME">홈</a></li>
-        <li><a href="schedual.html" class="gnb-link active" data-label="PLAN">일정관리</a></li>
-        <li><a href="timeschedual.html" class="gnb-link" data-label="TIME">시간표</a></li>
-        <li><a href="exam.html" class="gnb-link" data-label="EXAM">시험</a></li>
-        <li><a href="data.html" class="gnb-link" data-label="DATA">자료</a></li>
+        <li><a href="index.html"        class="gnb-link"        data-label="HOME">홈</a></li>
+        <li><a href="schedual.html"     class="gnb-link active" data-label="PLAN">일정관리</a></li>
+        <li><a href="timeschedual.html" class="gnb-link"        data-label="TIME">시간표</a></li>
+        <li><a href="exam.html"         class="gnb-link"        data-label="EXAM">시험</a></li>
+        <li><a href="data.html"         class="gnb-link"        data-label="DATA">자료</a></li>
         <li class="gnb-divider"></li>
-        <li><a href="tool.html" class="gnb-link" data-label="TOOL">도구</a></li>
-        <li><a href="memo.html" class="gnb-link" data-label="MEMO">생기부</a></li>
-        <li><a href="ai.html" class="gnb-link gnb-link-ai" data-label="AI">AI</a></li>
+        <li><a href="tool.html"         class="gnb-link"        data-label="TOOL">도구</a></li>
+        <li><a href="memo.html"         class="gnb-link"        data-label="MEMO">생기부</a></li>
+        <li><a href="ai.html"           class="gnb-link gnb-link-ai" data-label="AI">AI</a></li>
       </ul>
     </div>
   </nav>
 
-  <!-- PAGE HEADER -->
+  <!-- ══ 페이지 헤더 ══════════════════════════ -->
   <div class="page-header">
     <div class="page-header-inner">
-      <div class="page-header-text">
+      <div>
         <p class="page-eyebrow">SCHEDULE MANAGER</p>
         <h1 class="page-title">일정 관리</h1>
         <p class="page-sub" id="pageDate"></p>
       </div>
-      <div class="page-header-actions">
-        <button class="btn-stat" id="btnStats" title="통계 대시보드">
-          <span>📊</span> 통계
-        </button>
-        <button class="btn-primary" id="btnAdd">
-          <span>+</span> 새 일정
-        </button>
+      <div class="page-actions">
+        <button class="btn-icon" id="btnStats">📊 통계</button>
+        <button class="btn-primary" id="btnAdd">+ 새 일정</button>
       </div>
     </div>
 
-    <!-- 상단 스탯 바 -->
-    <div class="header-stats" id="headerStats">
+    <!-- 스탯 바 -->
+    <div class="header-stats">
       <div class="hstat">
         <span class="hstat-num" id="hsTotalToday">—</span>
         <span class="hstat-label">오늘 일정</span>
       </div>
-      <div class="hstat-div"></div>
+      <div class="hstat-sep"></div>
       <div class="hstat">
-        <span class="hstat-num accent-green" id="hsDoneToday">—</span>
+        <span class="hstat-num c-green" id="hsDoneToday">—</span>
         <span class="hstat-label">오늘 완료</span>
       </div>
-      <div class="hstat-div"></div>
+      <div class="hstat-sep"></div>
       <div class="hstat">
-        <span class="hstat-num accent-yellow" id="hsPending">—</span>
+        <span class="hstat-num c-yellow" id="hsPending">—</span>
         <span class="hstat-label">미완료</span>
       </div>
-      <div class="hstat-div"></div>
+      <div class="hstat-sep"></div>
       <div class="hstat">
-        <span class="hstat-num accent-red" id="hsOverdue">—</span>
+        <span class="hstat-num c-red" id="hsOverdue">—</span>
         <span class="hstat-label">기한 초과</span>
       </div>
-      <div class="hstat-div"></div>
-      <div class="hstat hstat-progress">
-        <div class="hstat-prog-label">
+      <div class="hstat-sep"></div>
+      <div class="hstat">
+        <span class="hstat-num c-blue" id="hsStudy">—</span>
+        <span class="hstat-label">오늘 공부</span>
+      </div>
+      <div class="hstat-sep"></div>
+      <div class="hstat hstat-bar">
+        <div class="hstat-bar-top">
           <span class="hstat-label">오늘 달성률</span>
           <span class="hstat-num" id="hsRate">—</span>
         </div>
-        <div class="hstat-prog-bar-wrap">
-          <div class="hstat-prog-bar" id="hsProgBar"></div>
-        </div>
+        <div class="hstat-track"><div class="hstat-fill" id="hsProgBar"></div></div>
       </div>
     </div>
   </div>
 
-  <!-- 메인 레이아웃 -->
-  <main class="main-layout">
+  <!-- ══ 메인 콘텐츠 ══════════════════════════ -->
+  <main class="main-wrap">
 
-    <!-- 사이드바 필터 -->
-    <aside class="sidebar">
-      <div class="sidebar-section">
-        <div class="sidebar-title">기간 필터</div>
-        <div class="filter-btns" id="filterPeriod">
-          <button class="filter-btn active" data-period="today">오늘</button>
-          <button class="filter-btn" data-period="week">이번 주</button>
-          <button class="filter-btn" data-period="month">이번 달</button>
-          <button class="filter-btn" data-period="all">전체</button>
+    <!-- ① 캘린더 섹션 (index.html 동일 구조) -->
+    <section class="card card-calendar">
+      <div class="card-header">
+        <h2 class="card-title"><span class="card-icon">📆</span> 일정 캘린더</h2>
+
+        <!-- 컨트롤 버튼 -->
+        <div class="calendar-controls">
+          <button class="ctrl-btn" id="btnCompact">
+            <span class="ctrl-ico">⊟</span>
+            <span class="ctrl-label">간단 보기</span>
+          </button>
+          <button class="ctrl-btn" id="btnDday">
+            <span class="ctrl-ico">🎯</span>
+            <span class="ctrl-label">D-day</span>
+          </button>
+          <button class="ctrl-btn active" id="btnUpcoming">
+            <span class="ctrl-ico">📌</span>
+            <span class="ctrl-label">예정 일정</span>
+          </button>
+        </div>
+
+        <!-- 월 이동 -->
+        <div class="cal-nav">
+          <button class="cal-nav-btn" id="calPrev">‹</button>
+          <span class="cal-month-label" id="calMonthLabel"></span>
+          <button class="cal-nav-btn" id="calNext">›</button>
         </div>
       </div>
 
-      <div class="sidebar-section">
-        <div class="sidebar-title">카테고리</div>
-        <div class="cat-filter-list" id="catFilters">
-          <label class="cat-filter-item">
-            <input type="checkbox" value="all" checked id="catAll" />
-            <span class="cat-check-box"></span>
-            <span class="cat-filter-label">전체</span>
-          </label>
-          <label class="cat-filter-item">
-            <input type="checkbox" value="과제" />
-            <span class="cat-check-box cat-과제-bg"></span>
-            <span class="cat-filter-label">과제/수행</span>
-          </label>
-          <label class="cat-filter-item">
-            <input type="checkbox" value="시험" />
-            <span class="cat-check-box cat-시험-bg"></span>
-            <span class="cat-filter-label">시험</span>
-          </label>
-          <label class="cat-filter-item">
-            <input type="checkbox" value="약속" />
-            <span class="cat-check-box cat-약속-bg"></span>
-            <span class="cat-filter-label">약속</span>
-          </label>
-          <label class="cat-filter-item">
-            <input type="checkbox" value="기타" />
-            <span class="cat-check-box cat-기타-bg"></span>
-            <span class="cat-filter-label">기타</span>
-          </label>
+      <!-- 예정 일정 패널 -->
+      <div class="upcoming-panel" id="upcomingPanel">
+        <div class="upcoming-title">📌 7일 이내 미완료 일정</div>
+        <div class="upcoming-list" id="upcomingList"><div class="skeleton-item" style="height:32px"></div></div>
+      </div>
+
+      <!-- 달력 그리드 -->
+      <div class="calendar-wrap">
+        <div class="cal-day-headers">
+          <span class="sun">일</span><span>월</span><span>화</span>
+          <span>수</span><span>목</span><span>금</span><span class="sat">토</span>
         </div>
+        <div class="cal-grid" id="calGrid"></div>
       </div>
 
-      <div class="sidebar-section">
-        <div class="sidebar-title">완료 상태</div>
-        <div class="filter-btns" id="filterDone">
-          <button class="filter-btn active" data-done="all">전체</button>
-          <button class="filter-btn" data-done="undone">미완료</button>
-          <button class="filter-btn" data-done="done">완료</button>
-        </div>
+      <!-- 범례 -->
+      <div class="cal-legend">
+        <span class="legend-item"><span class="legend-dot cat-과제"></span>과제/수행</span>
+        <span class="legend-item"><span class="legend-dot cat-시험"></span>시험</span>
+        <span class="legend-item"><span class="legend-dot cat-약속"></span>약속</span>
+        <span class="legend-item"><span class="legend-dot cat-기타"></span>기타</span>
       </div>
+    </section>
 
-      <div class="sidebar-section">
-        <div class="sidebar-title">정렬</div>
-        <select class="sort-select" id="sortSelect">
-          <option value="date-asc">날짜 오름차순</option>
-          <option value="date-desc">날짜 내림차순</option>
-          <option value="name-asc">이름 오름차순</option>
-          <option value="cat">카테고리별</option>
-          <option value="progress">완성도 순</option>
-        </select>
-      </div>
+    <!-- ② 일정 목록 섹션 -->
+    <section class="card card-list">
+      <div class="card-header">
+        <h2 class="card-title"><span class="card-icon">📋</span> 일정 목록</h2>
+        <span class="result-count" id="resultCount"></span>
 
-      <div class="sidebar-section">
-        <div class="sidebar-title">검색</div>
-        <div class="search-wrap">
-          <input type="text" class="search-input" id="searchInput" placeholder="일정 검색..." />
-          <span class="search-ico">🔍</span>
-        </div>
-      </div>
-    </aside>
-
-    <!-- 일정 목록 -->
-    <section class="content-area">
-      <!-- 뷰 토글 -->
-      <div class="view-controls">
+        <!-- 뷰 토글 -->
         <div class="view-toggle">
-          <button class="view-btn active" id="btnListView" title="리스트 뷰">☰</button>
-          <button class="view-btn" id="btnCardView" title="카드 뷰">⊞</button>
+          <button class="view-btn active" id="btnListView" title="리스트">☰</button>
+          <button class="view-btn" id="btnCardView" title="카드">⊞</button>
         </div>
-        <div class="result-count" id="resultCount">불러오는 중...</div>
+
+        <!-- 인라인 필터 -->
+        <div class="inline-filters">
+          <select class="f-select-sm" id="filterPeriod">
+            <option value="today">오늘</option>
+            <option value="week">이번 주</option>
+            <option value="month">이번 달</option>
+            <option value="all">전체</option>
+          </select>
+          <select class="f-select-sm" id="filterDone">
+            <option value="all">전체</option>
+            <option value="undone">미완료</option>
+            <option value="done">완료</option>
+          </select>
+          <select class="f-select-sm" id="filterCat">
+            <option value="all">모든 카테고리</option>
+            <option value="과제">과제/수행</option>
+            <option value="시험">시험</option>
+            <option value="약속">약속</option>
+            <option value="기타">기타</option>
+          </select>
+          <select class="f-select-sm" id="sortSelect">
+            <option value="date-asc">날짜↑</option>
+            <option value="date-desc">날짜↓</option>
+            <option value="name-asc">이름순</option>
+            <option value="progress">완성도순</option>
+          </select>
+          <div class="search-wrap">
+            <input type="text" class="f-search" id="searchInput" placeholder="검색..." />
+            <span class="search-ico">🔍</span>
+          </div>
+        </div>
       </div>
 
       <!-- 리스트 뷰 -->
-      <div class="schedule-list-view" id="listView">
+      <div id="listView">
         <div id="scheduleList">
           <div class="skeleton-item"></div>
           <div class="skeleton-item"></div>
           <div class="skeleton-item"></div>
-          <div class="skeleton-item"></div>
         </div>
       </div>
-
       <!-- 카드 뷰 -->
-      <div class="schedule-card-view hidden" id="cardView">
+      <div id="cardView" class="hidden">
         <div id="scheduleCardGrid"></div>
       </div>
     </section>
 
   </main>
 
-  <!-- ============================
-       통계 대시보드 패널
-       ============================ -->
-  <div class="stats-panel-overlay" id="statsPanelOverlay">
-    <div class="stats-panel" id="statsPanel">
-      <div class="stats-panel-header">
-        <h2 class="stats-panel-title">📊 일정 달성 통계</h2>
-        <button class="stats-panel-close" id="statsPanelClose">✕</button>
+  <!-- ══ 통계 패널 ════════════════════════════ -->
+  <div class="overlay" id="statsPanelOverlay">
+    <div class="side-panel">
+      <div class="panel-hd">
+        <span class="panel-hd-title">📊 달성 통계</span>
+        <button class="panel-close-btn" id="statsPanelClose">✕</button>
       </div>
-
-      <div class="stats-panel-body">
-
-        <!-- 기간 선택 -->
-        <div class="stats-period-btns">
+      <div class="panel-bd">
+        <div class="sp-period">
           <button class="sp-btn active" data-sp="7">최근 7일</button>
           <button class="sp-btn" data-sp="30">최근 30일</button>
           <button class="sp-btn" data-sp="90">최근 90일</button>
         </div>
-
-        <!-- 요약 카드 -->
         <div class="stats-summary">
-          <div class="ss-card">
-            <span class="ss-num" id="ss-total">—</span>
-            <span class="ss-label">전체 일정</span>
-          </div>
-          <div class="ss-card">
-            <span class="ss-num accent-green" id="ss-done">—</span>
-            <span class="ss-label">완료</span>
-          </div>
-          <div class="ss-card">
-            <span class="ss-num accent-yellow" id="ss-rate">—</span>
-            <span class="ss-label">달성률</span>
-          </div>
-          <div class="ss-card">
-            <span class="ss-num accent-blue" id="ss-avg-prog">—</span>
-            <span class="ss-label">평균 완성도</span>
-          </div>
+          <div class="ss-card"><span class="ss-num" id="ss-total">—</span><span class="ss-lbl">전체</span></div>
+          <div class="ss-card"><span class="ss-num c-green" id="ss-done">—</span><span class="ss-lbl">완료</span></div>
+          <div class="ss-card"><span class="ss-num c-accent" id="ss-rate">—</span><span class="ss-lbl">달성률</span></div>
+          <div class="ss-card"><span class="ss-num c-blue" id="ss-study">—</span><span class="ss-lbl">총 공부시간</span></div>
         </div>
-
-        <!-- 일별 달성 그래프 -->
-        <div class="stats-chart-block">
-          <div class="stats-chart-title">일별 달성 현황</div>
-          <div class="bar-chart-wrap" id="barChartWrap">
-            <canvas id="barChart" height="160"></canvas>
-          </div>
+        <div class="stat-block">
+          <div class="stat-block-title">일별 달성 현황</div>
+          <div style="overflow-x:auto"><canvas id="barChart" height="140"></canvas></div>
         </div>
-
-        <!-- 카테고리별 원형 -->
-        <div class="stats-row">
-          <div class="stats-chart-block half">
-            <div class="stats-chart-title">카테고리 분포</div>
+        <div class="stat-block">
+          <div class="stat-block-title">일별 공부 시간 (분)</div>
+          <div style="overflow-x:auto"><canvas id="studyChart" height="120"></canvas></div>
+        </div>
+        <div class="stat-row2">
+          <div class="stat-block">
+            <div class="stat-block-title">카테고리 분포</div>
             <div class="donut-wrap">
-              <canvas id="donutChart" width="180" height="180"></canvas>
-              <div class="donut-legend" id="donutLegend"></div>
+              <canvas id="donutChart" width="130" height="130"></canvas>
+              <div id="donutLegend"></div>
             </div>
           </div>
-
-          <!-- 완성도 분포 -->
-          <div class="stats-chart-block half">
-            <div class="stats-chart-title">완성도 분포</div>
-            <div class="progress-dist" id="progressDist"></div>
+          <div class="stat-block">
+            <div class="stat-block-title">완성도 분포</div>
+            <div id="progressDist"></div>
           </div>
         </div>
-
-        <!-- 꾸준함 히트맵 -->
-        <div class="stats-chart-block">
-          <div class="stats-chart-title">완료 히트맵 (최근 3개월)</div>
-          <div class="heatmap-wrap" id="heatmapWrap"></div>
+        <div class="stat-block">
+          <div class="stat-block-title">완료 히트맵 (최근 90일)</div>
+          <div id="heatmapWrap"></div>
         </div>
-
       </div>
     </div>
   </div>
 
-  <!-- ============================
-       일정 추가/수정 모달
-       ============================ -->
+  <!-- ══ 일정 추가/수정 모달 ════════════════ -->
   <div class="modal-overlay" id="modalOverlay">
-    <div class="modal" id="modal">
-      <div class="modal-header">
-        <h3 class="modal-title" id="modalTitle">새 일정 추가</h3>
-        <button class="modal-close" id="modalClose">✕</button>
+    <div class="modal">
+      <div class="modal-hd">
+        <span class="modal-hd-title" id="modalTitle">새 일정 추가</span>
+        <button class="panel-close-btn" id="modalClose">✕</button>
       </div>
-      <div class="modal-body">
+      <div class="modal-bd">
         <input type="hidden" id="formId" />
 
         <div class="form-row">
-          <label class="form-label">제목 <span class="required">*</span></label>
-          <input type="text" class="form-input" id="formName" placeholder="일정 제목을 입력하세요" />
+          <label class="f-label">제목 <span class="req">*</span></label>
+          <input type="text" class="f-input" id="formName" placeholder="일정 제목" />
         </div>
 
-        <div class="form-row-2col">
+        <div class="form-2col">
           <div class="form-row">
-            <label class="form-label">날짜/시간</label>
-            <input type="datetime-local" class="form-input" id="formDate" />
+            <label class="f-label">날짜/시간</label>
+            <input type="datetime-local" class="f-input" id="formDate" />
           </div>
           <div class="form-row">
-            <label class="form-label">카테고리</label>
-            <select class="form-input" id="formCategory">
-              <option value="">선택 없음</option>
+            <label class="f-label">카테고리</label>
+            <select class="f-input" id="formCategory">
+              <option value="">없음</option>
               <option value="과제">과제</option>
               <option value="수행">수행평가</option>
               <option value="시험">시험</option>
@@ -300,92 +284,117 @@
           </div>
         </div>
 
-        <!-- 과제 완성도 (과제/수행 카테고리일 때 강조) -->
-        <div class="form-row completion-row" id="completionRow">
-          <label class="form-label">
-            과제 완성도
-            <span class="completion-pct-badge" id="formCompletionBadge">0%</span>
-          </label>
-          <div class="completion-slider-wrap">
-            <input type="range" min="0" max="100" step="5" value="0"
-                   class="completion-slider" id="formCompletion" />
-            <div class="completion-track-labels">
-              <span>0%</span>
-              <span>25%</span>
-              <span>50%</span>
-              <span>75%</span>
-              <span>100%</span>
-            </div>
+        <!-- 과제 완성도 (과제/수행만 표시) -->
+        <div class="comp-row" id="completionRow" style="display:none">
+          <div class="comp-row-top">
+            <label class="f-label">과제 완성도</label>
+            <span class="comp-badge" id="formCompletionBadge">0%</span>
           </div>
-          <div class="completion-color-bar">
-            <div class="completion-color-fill" id="formCompletionFill"></div>
+          <input type="range" min="0" max="100" step="5" value="0" class="comp-slider" id="formCompletion" />
+          <div class="comp-tick-labels"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+        </div>
+
+        <!-- 공부 시간 -->
+        <div class="form-row">
+          <label class="f-label">공부 시간</label>
+          <div class="study-time-wrap">
+            <input type="number" class="f-input" id="formStudyHour" min="0" max="23" placeholder="0" style="width:80px" />
+            <span class="study-time-sep">시간</span>
+            <input type="number" class="f-input" id="formStudyMin" min="0" max="59" placeholder="0" style="width:80px" />
+            <span class="study-time-sep">분</span>
+            <span class="study-time-hint" id="studyTimeHint"></span>
           </div>
         </div>
 
         <div class="form-row">
-          <label class="form-label">키워드</label>
-          <input type="text" class="form-input" id="formKeywords" placeholder="쉼표로 구분 (예: 수학, 중간고사)" />
+          <label class="f-label">키워드</label>
+          <input type="text" class="f-input" id="formKeywords" placeholder="쉼표로 구분 (예: 수학, 중간고사)" />
         </div>
-
         <div class="form-row">
-          <label class="form-label">내용</label>
-          <textarea class="form-input form-textarea" id="formContent" rows="3" placeholder="상세 내용"></textarea>
+          <label class="f-label">내용</label>
+          <textarea class="f-input f-textarea" id="formContent" rows="3" placeholder="상세 내용"></textarea>
         </div>
-
         <div class="form-row">
-          <label class="form-label">추가 정보</label>
-          <input type="text" class="form-input" id="formAdd" placeholder="추가 정보" />
+          <label class="f-label">추가 정보</label>
+          <input type="text" class="f-input" id="formAdd" placeholder="추가 정보" />
         </div>
 
         <div class="form-actions">
-          <button class="btn-cancel" id="formCancel">취소</button>
+          <button class="btn-ghost" id="formCancel">취소</button>
           <button class="btn-primary" id="formSave">저장</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 일정 상세 사이드 패널 -->
-  <div class="detail-panel-overlay" id="detailOverlay">
-    <div class="detail-panel" id="detailPanel">
-      <div class="detail-header">
-        <div class="detail-cat-bar" id="detailCatBar"></div>
-        <button class="detail-close" id="detailClose">✕</button>
+  <!-- ══ 상세 패널 ════════════════════════════ -->
+  <div class="overlay" id="detailOverlay">
+    <div class="side-panel">
+      <div class="detail-stripe" id="detailStripe"></div>
+      <div class="panel-hd">
+        <span class="panel-hd-title" id="detailCatLabel" style="font-size:.75rem;opacity:.5"></span>
+        <button class="panel-close-btn" id="detailClose">✕</button>
       </div>
-      <div class="detail-body">
+      <div class="panel-bd">
         <div class="detail-title-row">
-          <div class="detail-check" id="detailCheck"></div>
-          <h2 class="detail-title" id="detailTitle"></h2>
+          <button class="detail-check-btn" id="detailCheck"></button>
+          <h2 class="detail-name" id="detailTitle"></h2>
         </div>
         <div class="detail-meta" id="detailMeta"></div>
 
-        <!-- 완성도 표시 -->
-        <div class="detail-completion" id="detailCompletionBlock">
-          <div class="dc-label-row">
-            <span class="dc-label">과제 완성도</span>
-            <span class="dc-pct" id="detailCompletionPct">0%</span>
+        <!-- 완성도 블록 -->
+        <div class="comp-block" id="detailCompBlock" style="display:none">
+          <div class="comp-block-top">
+            <span class="comp-block-label">과제 완성도</span>
+            <span class="comp-block-pct" id="detailPct">0%</span>
           </div>
-          <div class="dc-bar-wrap">
-            <div class="dc-bar" id="detailCompletionBar"></div>
-          </div>
-          <!-- 인라인 슬라이더 -->
-          <input type="range" min="0" max="100" step="5" value="0"
-                 class="completion-slider detail-slider" id="detailSlider" />
-          <button class="dc-save-btn" id="detailSliderSave">완성도 저장</button>
+          <div class="comp-track"><div class="comp-fill" id="detailBar"></div></div>
+          <input type="range" min="0" max="100" step="5" value="0" class="comp-slider" id="detailSlider" />
+          <button class="comp-save-btn" id="detailSliderSave">완성도 저장</button>
         </div>
 
-        <div class="detail-content" id="detailContent"></div>
-        <div class="detail-actions">
-          <button class="detail-btn-edit" id="detailEdit">✏️ 수정</button>
-          <button class="detail-btn-del" id="detailDelete">🗑️ 삭제</button>
+        <!-- 공부시간 블록 -->
+        <div class="study-block" id="detailStudyBlock">
+          <div class="study-block-top">
+            <span class="study-block-label">⏱ 공부 시간</span>
+            <span class="study-block-val" id="detailStudyVal">—</span>
+          </div>
+          <div class="study-edit-row">
+            <input type="number" class="f-input" id="detailStudyHour" min="0" max="23" placeholder="0" style="width:70px" />
+            <span style="color:var(--text3);font-size:.8rem">시간</span>
+            <input type="number" class="f-input" id="detailStudyMin"  min="0" max="59" placeholder="0" style="width:70px" />
+            <span style="color:var(--text3);font-size:.8rem">분</span>
+            <button class="comp-save-btn" id="detailStudySave" style="flex:1">저장</button>
+          </div>
+        </div>
+
+        <div class="detail-body-text" id="detailContent"></div>
+        <div class="detail-btns">
+          <button class="btn-ghost" id="detailEdit">✏️ 수정</button>
+          <button class="btn-danger" id="detailDelete">🗑️ 삭제</button>
         </div>
       </div>
     </div>
   </div>
 
-  <footer class="footer">
-    <p>© 2025 StudyHub · 나만의 학습 관리 시스템</p>
-  </footer>
+  <!-- ══ 날짜 클릭 모달 (캘린더에서) ══════════ -->
+  <div class="modal-overlay" id="calModalOverlay">
+    <div class="modal">
+      <div class="modal-hd">
+        <div>
+          <div class="modal-hd-title" id="calModalDateLabel"></div>
+          <div id="calModalDday" style="font-family:var(--mono);font-size:.78rem;color:var(--red);margin-top:3px"></div>
+        </div>
+        <button class="panel-close-btn" id="calModalClose">✕</button>
+      </div>
+      <div class="modal-bd">
+        <div class="modal-items" id="calModalItems"></div>
+        <button class="modal-add-btn" id="calModalAddBtn">+ 이 날 일정 추가</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">© 2025 StudyHub · 나만의 학습 관리 시스템</footer>
 
   <script src="schedual.js"></script>
 </body>
