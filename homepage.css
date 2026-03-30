@@ -190,27 +190,15 @@ ul { list-style: none; }
 
 /* ── HERO ─────────────────────────────────── */
 .hero {
-  min-height: 100vh;
+  min-height: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   position: relative;
   overflow: hidden;
-  padding: calc(var(--gnb-h) + 40px) 24px 80px;
+  padding: calc(var(--gnb-h) + 48px) 24px 48px;
   text-align: center;
-}
-@media (max-width: 1024px) and (min-width: 769px) {
-  .hero {
-    min-height: auto;
-    padding: calc(var(--gnb-h) + 32px) 24px 48px;
-  }
-}
-@media (max-width: 768px) {
-  .hero {
-    min-height: auto;
-    padding: calc(var(--gnb-h) + 20px) 16px 28px;
-  }
 }
 .hero-bg {
   position: absolute;
@@ -254,25 +242,21 @@ ul { list-style: none; }
 .hero-content { position: relative; z-index: 1; }
 .hero-eyebrow {
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--accent);
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   opacity: 0;
   animation: fadeUp 0.8s 0.2s forwards;
 }
-@media (max-width: 768px) {
-  .hero-eyebrow { font-size: 0.68rem; margin-bottom: 10px; letter-spacing: 0.1em; }
-  .hero-subtitle { font-size: 0.8rem; }
-}
 .hero-title {
-  font-size: clamp(2.2rem, 7vw, 5.5rem);
+  font-size: clamp(2rem, 6vw, 3.8rem);
   font-weight: 900;
   line-height: 1.05;
   letter-spacing: -0.04em;
   color: var(--text1);
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   opacity: 0;
   animation: fadeUp 0.8s 0.35s forwards;
 }
@@ -302,7 +286,7 @@ ul { list-style: none; }
   z-index: 1;
   display: flex;
   gap: 12px;
-  margin-top: 56px;
+  margin-top: 32px;
   flex-wrap: wrap;
   justify-content: center;
   opacity: 0;
@@ -312,8 +296,8 @@ ul { list-style: none; }
   background: var(--surface);
   border: 1px solid var(--border2);
   border-radius: var(--radius);
-  padding: 20px 24px;
-  min-width: 140px;
+  padding: 14px 20px;
+  min-width: 130px;
   text-align: center;
   transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
   cursor: pointer;
@@ -325,16 +309,16 @@ ul { list-style: none; }
 }
 .stat-label {
   display: block;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: var(--text3);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .stat-num {
   display: block;
   font-family: var(--font-mono);
-  font-size: 2rem;
+  font-size: 1.7rem;
   font-weight: 700;
   color: var(--accent);
   line-height: 1;
@@ -346,65 +330,52 @@ ul { list-style: none; }
   margin-top: 4px;
 }
 
-/* 태블릿: 스탯 카드 2x2 */
-@media (max-width: 1024px) and (min-width: 769px) {
-  .hero-stats {
-    margin-top: 40px;
-    gap: 10px;
-  }
-  .stat-card {
-    min-width: 130px;
-    padding: 16px 18px;
-  }
+/* 완료 stat 카드 — 진행 바 */
+.stat-progress-wrap {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  margin-top: 10px;
+  overflow: hidden;
+}
+.stat-progress-bar {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent3);
+  transition: width 0.5s ease;
+  width: 0%;
 }
 
-/* 모바일: 스탯 카드 2x2 그리드, 간격 최소화 */
-@media (max-width: 768px) {
-  .hero-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    width: 100%;
-    max-width: 380px;
-    margin-top: 24px;
-  }
-  .stat-card {
-    min-width: unset;
-    padding: 14px 12px;
-    border-radius: 10px;
-  }
-  .stat-num { font-size: 1.6rem; }
-  .stat-label { font-size: 0.65rem; margin-bottom: 4px; }
-  .stat-sub { font-size: 0.65rem; }
+/* 오늘 일정 카드 헤더 완료 카운트 */
+.card-done-count {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--accent3);
+  background: rgba(52,211,153,0.1);
+  border: 1px solid rgba(52,211,153,0.25);
+  border-radius: 20px;
+  padding: 2px 10px;
+  white-space: nowrap;
 }
 
 /* ── MAIN GRID ────────────────────────────── */
 .main-grid {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 48px 24px 80px;
+  padding: 24px 24px 60px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-areas:
     "schedule exam"
     "calendar calendar"
     "quick quick";
-  gap: 20px;
+  gap: 16px;
 }
 .card-schedule { grid-area: schedule; }
 .card-exam     { grid-area: exam; }
 .card-calendar { grid-area: calendar; }
 .card-quick    { grid-area: quick; }
 
-/* 태블릿 */
-@media (max-width: 1024px) and (min-width: 769px) {
-  .main-grid {
-    padding: 32px 20px 60px;
-    gap: 16px;
-  }
-}
-
-/* 모바일 */
 @media (max-width: 768px) {
   .main-grid {
     grid-template-columns: 1fr;
@@ -413,9 +384,15 @@ ul { list-style: none; }
       "exam"
       "calendar"
       "quick";
-    padding: 16px 12px 48px;
+    padding: 16px 16px 48px;
     gap: 12px;
   }
+  .hero {
+    padding: calc(var(--gnb-h) + 28px) 16px 32px;
+  }
+  .hero-stats { margin-top: 24px; gap: 8px; }
+  .stat-card { padding: 10px 14px; min-width: 110px; }
+  .stat-num { font-size: 1.4rem; }
 }
 
 /* ── 카드 ─────────────────────────────────── */
@@ -423,22 +400,15 @@ ul { list-style: none; }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 24px;
+  padding: 18px 20px;
   transition: border-color 0.3s;
 }
 .card:hover { border-color: var(--border2); }
-
-@media (max-width: 1024px) and (min-width: 769px) {
-  .card { padding: 20px; }
-}
-@media (max-width: 768px) {
-  .card { padding: 16px 14px; border-radius: 10px; }
-}
 .card-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 10px;
+  margin-bottom: 14px;
   flex-wrap: wrap;
 }
 .card-title {
@@ -582,14 +552,6 @@ ul { list-style: none; }
   gap: 6px;
   flex-wrap: wrap;
 }
-@media (max-width: 768px) {
-  .calendar-controls { gap: 4px; }
-  .ctrl-btn { padding: 4px 8px; font-size: 0.68rem; }
-  .ctrl-label { display: none; }
-  .ctrl-ico { font-size: 0.9rem; }
-  .cal-nav { margin-left: 0; }
-  .card-header { gap: 8px; }
-}
 .ctrl-btn {
   display: flex;
   align-items: center;
@@ -724,15 +686,6 @@ ul { list-style: none; }
   transition: border-color 0.15s, background 0.15s;
   overflow: hidden;
 }
-@media (max-width: 768px) {
-  .cal-cell { min-height: 52px; padding: 4px 3px; }
-  .cal-date-num { font-size: 0.7rem !important; margin-bottom: 2px; }
-  .cal-event-chip { font-size: 0.58rem; padding: 1px 3px; }
-  .cal-dday-badge { font-size: 0.55rem; padding: 1px 3px; }
-}
-@media (max-width: 380px) {
-  .cal-cell { min-height: 42px; }
-}
 .cal-cell:hover {
   background: var(--surface2);
   border-color: var(--border2);
@@ -806,8 +759,123 @@ ul { list-style: none; }
 .cat-default { background: var(--bg3); color: var(--text3); }
 
 /* compact 모드 */
-.cal-grid.compact .cal-cell { min-height: 44px; }
+.cal-grid.compact .cal-cell { min-height: 52px; padding: 5px 6px; }
 .cal-grid.compact .cal-events { display: none; }
+
+/* compact 모드 — 완료 진행 바 */
+.cal-progress-wrap {
+  display: none;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  margin-top: 4px;
+  overflow: hidden;
+}
+.cal-progress-bar {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent3);
+  transition: width 0.3s;
+}
+.cal-grid.compact .cal-progress-wrap { display: block; }
+
+/* compact 모드 — 카테고리 도트 줄 */
+.cal-dot-row {
+  display: none;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 3px;
+}
+.cal-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.cal-grid.compact .cal-dot-row { display: flex; }
+
+/* compact 모드 — 완료 카운트 뱃지 */
+.cal-done-badge {
+  display: none;
+  font-family: var(--font-mono);
+  font-size: 0.52rem;
+  color: var(--accent3);
+  line-height: 1;
+  margin-top: 2px;
+}
+.cal-grid.compact .cal-done-badge { display: block; }
+
+/* ── 모바일 캘린더 최적화 ──────────────────── */
+@media (max-width: 768px) {
+  /* 카드 패딩 */
+  .card-calendar { padding: 14px 10px; }
+
+  /* 캘린더 헤더 컨트롤을 두 줄로 정리 */
+  .card-calendar .card-header {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .calendar-controls {
+    order: 3;
+    width: 100%;
+  }
+
+  /* 셀 크기 줄이기 — 가로 공간 확보 */
+  .cal-cell {
+    min-height: 54px;
+    padding: 4px 3px;
+  }
+
+  /* 날짜 숫자 작게 */
+  .cal-date-num {
+    font-size: 0.68rem;
+    margin-bottom: 2px;
+  }
+  .cal-cell.today .cal-date-num {
+    width: 18px;
+    height: 18px;
+    font-size: 0.62rem;
+  }
+
+  /* D-day 뱃지 작게 */
+  .cal-dday-badge {
+    font-size: 0.52rem;
+    padding: 1px 3px;
+  }
+
+  /* 이벤트 칩 → 컬러 도트만 표시 */
+  .cal-event-chip {
+    font-size: 0;
+    padding: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+  .cal-events {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 2px;
+    align-items: center;
+  }
+  .cal-more {
+    font-size: 0.5rem;
+    padding-left: 0;
+  }
+
+  /* 요일 헤더 */
+  .cal-day-headers span {
+    font-size: 0.65rem;
+    padding: 4px 0;
+  }
+
+  /* 그리드 간격 */
+  .cal-grid { gap: 1px; }
+}
 
 /* 범례 */
 .cal-legend {
@@ -835,14 +903,8 @@ ul { list-style: none; }
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 }
-@media (max-width: 1024px) and (min-width: 769px) {
-  .quick-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
-}
-@media (max-width: 768px) {
-  .quick-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; }
-}
 @media (max-width: 480px) {
-  .quick-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .quick-grid { grid-template-columns: repeat(3, 1fr); }
 }
 .quick-btn {
   display: flex;
@@ -864,18 +926,6 @@ ul { list-style: none; }
   color: var(--accent);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(108,143,255,0.12);
-}
-@media (max-width: 768px) {
-  .quick-btn {
-    padding: 12px 6px;
-    gap: 5px;
-    font-size: 0.72rem;
-    border-radius: 10px;
-  }
-  .quick-ico { font-size: 1.3rem !important; }
-}
-@media (max-width: 380px) {
-  .quick-btn { padding: 10px 4px; font-size: 0.65rem; }
 }
 .quick-btn-new {
   border-color: rgba(52,211,153,0.2);
