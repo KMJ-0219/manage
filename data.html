@@ -35,246 +35,254 @@
     </div>
   </nav>
 
-  <!-- 페이지 헤더 -->
+  <!-- ══ 페이지 헤더 ══════════════════════════ -->
   <div class="dh-header">
     <div class="dh-header-inner">
-      <div class="dh-header-text">
+      <div>
         <p class="dh-eyebrow">STUDY LIBRARY</p>
         <h1 class="dh-title">자료 보관함</h1>
         <p class="dh-sub" id="dhDate"></p>
       </div>
-      <div class="dh-header-actions">
-        <button class="dh-btn-secondary" id="btnManageCategories">🏷 카테고리</button>
-        <button class="dh-btn-primary" id="btnNewPlaylist">+ 플레이리스트</button>
+      <div class="dh-header-btns">
+        <button class="dh-btn-ghost" id="btnManageCat">🏷 카테고리</button>
+        <button class="dh-btn-accent" id="btnNewList">+ 새 묶음</button>
       </div>
     </div>
 
-    <!-- 검색 + 카테고리 필터 바 -->
+    <!-- 필터 / 검색 바 -->
     <div class="dh-filter-bar">
       <div class="dh-search-wrap">
-        <span class="dh-search-ico">🔍</span>
-        <input type="text" class="dh-search" id="searchInput" placeholder="플레이리스트, 자료 검색..." />
+        <span class="dh-si">🔍</span>
+        <input type="text" class="dh-search" id="searchInput" placeholder="묶음 검색..." />
       </div>
-      <div class="dh-cat-filter" id="catFilterBar">
-        <button class="dh-cat-chip active" data-cat-id="all">전체</button>
-        <!-- 카테고리 칩들 JS로 렌더 -->
+      <div class="dh-chips-row" id="catChips">
+        <button class="dh-chip active" data-id="all">전체</button>
       </div>
-      <div class="dh-sort-wrap">
-        <select class="dh-select" id="sortSelect">
-          <option value="updated">최근 수정순</option>
-          <option value="created">생성순</option>
-          <option value="name">이름순</option>
-          <option value="items">자료 수</option>
-        </select>
+      <select class="dh-select" id="sortSelect">
+        <option value="updated">최근 수정순</option>
+        <option value="created">생성순</option>
+        <option value="name">이름순</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ══ 메인: 묶음 그리드 ════════════════════ -->
+  <div class="dh-main" id="dhMain">
+    <div class="dh-grid" id="listGrid">
+      <div class="dh-skel"></div><div class="dh-skel"></div>
+      <div class="dh-skel"></div><div class="dh-skel"></div>
+      <div class="dh-skel"></div><div class="dh-skel"></div>
+    </div>
+    <div class="dh-empty" id="emptyMsg" style="display:none">
+      <div class="dh-empty-ico">📂</div>
+      <div class="dh-empty-t">자료 묶음이 없습니다</div>
+      <div class="dh-empty-s">새 묶음을 만들어 자료를 정리해 보세요.</div>
+      <button class="dh-btn-accent" id="btnNewListEmpty">+ 첫 묶음 만들기</button>
+    </div>
+  </div>
+
+  <!-- ══ 확장 패널 (묶음 클릭 시 전체화면) ══ -->
+  <div class="dh-expand" id="expandPanel" style="display:none">
+    <!-- 배경 블러 클릭 닫기 -->
+    <div class="dh-expand-bg" id="expandBg"></div>
+
+    <div class="dh-expand-inner">
+      <!-- 상단 헤더 -->
+      <div class="dh-exp-hd">
+        <div class="dh-exp-cover" id="expCover"></div>
+        <div class="dh-exp-info">
+          <div class="dh-exp-tags" id="expTags"></div>
+          <h2 class="dh-exp-name" id="expName"></h2>
+          <p  class="dh-exp-desc" id="expDesc"></p>
+          <div class="dh-exp-meta" id="expMeta"></div>
+        </div>
+        <div class="dh-exp-top-actions">
+          <button class="dh-exp-act" id="expBtnAdd">+ 자료 추가</button>
+          <button class="dh-exp-act" id="expBtnEdit">✏️ 수정</button>
+          <button class="dh-exp-act danger" id="expBtnDel">🗑️</button>
+          <button class="dh-exp-close" id="expandClose">✕</button>
+        </div>
+      </div>
+
+      <!-- 바디: 자료 목록 + 뷰어 -->
+      <div class="dh-exp-body">
+
+        <!-- 왼쪽: 자료 목록 -->
+        <div class="dh-exp-list-col">
+          <div class="dh-exp-list-hd">
+            <div class="dh-chips-row" id="typeChips">
+              <button class="dh-chip active" data-type="all">전체</button>
+              <button class="dh-chip" data-type="link">🔗 링크</button>
+              <button class="dh-chip" data-type="note">📝 노트</button>
+              <button class="dh-chip" data-type="file">📎 파일</button>
+              <button class="dh-chip" data-type="video">🎬 영상</button>
+            </div>
+            <span class="dh-items-cnt" id="itemsCnt"></span>
+          </div>
+          <div class="dh-exp-list" id="itemsList"></div>
+        </div>
+
+        <!-- 오른쪽: 뷰어 -->
+        <div class="dh-exp-viewer" id="expViewer">
+          <div class="dh-viewer-placeholder" id="viewerPlaceholder">
+            <span>👆</span>
+            <p>자료를 선택하면<br>내용이 표시됩니다</p>
+          </div>
+          <div class="dh-viewer-content" id="viewerContent" style="display:none">
+            <div class="dh-viewer-hd" id="viewerHd"></div>
+            <div class="dh-viewer-body" id="viewerBody"></div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
 
-  <!-- 메인 레이아웃: 왼쪽 플레이리스트 그리드 / 오른쪽 상세 패널 -->
-  <div class="dh-layout">
-
-    <!-- 플레이리스트 그리드 -->
-    <div class="dh-playlist-area" id="playlistArea">
-      <div class="dh-playlist-grid" id="playlistGrid">
-        <!-- 스켈레톤 -->
-        <div class="dh-skeleton"></div>
-        <div class="dh-skeleton"></div>
-        <div class="dh-skeleton"></div>
-        <div class="dh-skeleton"></div>
-      </div>
-      <!-- 빈 상태 -->
-      <div class="dh-empty" id="emptyState" style="display:none">
-        <div class="dh-empty-ico">📂</div>
-        <div class="dh-empty-title">플레이리스트가 없습니다</div>
-        <div class="dh-empty-sub">새 플레이리스트를 만들어 자료를 추가해 보세요.</div>
-        <button class="dh-btn-primary" id="btnNewPlaylistEmpty">+ 첫 플레이리스트 만들기</button>
-      </div>
-    </div>
-
-    <!-- 자료 상세 패널 (오른쪽 슬라이드) -->
-    <div class="dh-detail-panel" id="detailPanel">
-      <div class="dh-detail-empty" id="detailEmpty">
-        <div class="dh-detail-empty-ico">👆</div>
-        <p>플레이리스트를 선택하세요</p>
-      </div>
-      <div class="dh-detail-content" id="detailContent" style="display:none">
-
-        <!-- 상세 헤더 -->
-        <div class="dh-detail-hd">
-          <div class="dh-detail-hd-top">
-            <div class="dh-detail-cover" id="detailCover"></div>
-            <div class="dh-detail-info">
-              <div class="dh-detail-cats" id="detailCats"></div>
-              <h2 class="dh-detail-title" id="detailTitle"></h2>
-              <p class="dh-detail-desc" id="detailDesc"></p>
-              <div class="dh-detail-meta" id="detailMeta"></div>
-            </div>
-          </div>
-          <div class="dh-detail-actions">
-            <button class="dh-detail-btn" id="btnAddItem">+ 자료 추가</button>
-            <button class="dh-detail-btn" id="btnEditPlaylist">✏️ 수정</button>
-            <button class="dh-detail-btn danger" id="btnDeletePlaylist">🗑️ 삭제</button>
-            <button class="dh-detail-close" id="detailClose">✕</button>
-          </div>
-        </div>
-
-        <!-- 자료 목록 -->
-        <div class="dh-items-area">
-          <div class="dh-items-header">
-            <span class="dh-items-count" id="itemsCount"></span>
-            <div class="dh-items-filter">
-              <button class="dh-type-chip active" data-type="all">전체</button>
-              <button class="dh-type-chip" data-type="link">🔗 링크</button>
-              <button class="dh-type-chip" data-type="note">📝 노트</button>
-              <button class="dh-type-chip" data-type="file">📎 파일</button>
-              <button class="dh-type-chip" data-type="video">🎬 영상</button>
-            </div>
-          </div>
-          <div class="dh-items-list" id="itemsList">
-            <!-- 자료 아이템들 JS로 렌더 -->
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ══ 플레이리스트 추가/수정 모달 ══ -->
-  <div class="dh-modal-overlay" id="plModalOverlay">
+  <!-- ══ 묶음 추가/수정 모달 ════════════════ -->
+  <div class="dh-overlay" id="listModal">
     <div class="dh-modal">
       <div class="dh-modal-hd">
-        <span class="dh-modal-title" id="plModalTitle">새 플레이리스트</span>
-        <button class="dh-modal-close" id="plModalClose">✕</button>
+        <span id="listModalTitle">새 자료 묶음</span>
+        <button class="dh-modal-x" id="listModalClose">✕</button>
       </div>
       <div class="dh-modal-bd">
-        <input type="hidden" id="plId" />
-        <div class="dh-form-row">
-          <label class="dh-form-label">제목 <span class="dh-req">*</span></label>
-          <input type="text" class="dh-form-input" id="plTitle" placeholder="플레이리스트 이름" />
+        <input type="hidden" id="listId" />
+        <div class="dh-field">
+          <label>제목 <span class="dh-req">*</span></label>
+          <input type="text" id="listTitle" placeholder="묶음 이름" />
         </div>
-        <div class="dh-form-row">
-          <label class="dh-form-label">설명</label>
-          <textarea class="dh-form-input dh-form-textarea" id="plDesc" rows="3" placeholder="간단한 설명"></textarea>
+        <div class="dh-field">
+          <label>설명</label>
+          <textarea id="listDesc" rows="2" placeholder="간단한 설명 (선택)"></textarea>
         </div>
-        <div class="dh-form-row">
-          <label class="dh-form-label">난이도</label>
-          <div class="dh-diff-btns">
-            <button class="dh-diff-btn" data-diff="">없음</button>
-            <button class="dh-diff-btn" data-diff="초급">🟢 초급</button>
-            <button class="dh-diff-btn" data-diff="중급">🟡 중급</button>
-            <button class="dh-diff-btn" data-diff="고급">🔴 고급</button>
+        <div class="dh-field">
+          <label>난이도</label>
+          <div class="dh-btn-row">
+            <button class="dh-tog active" data-v="">없음</button>
+            <button class="dh-tog" data-v="초급">🟢 초급</button>
+            <button class="dh-tog" data-v="중급">🟡 중급</button>
+            <button class="dh-tog" data-v="고급">🔴 고급</button>
           </div>
-          <input type="hidden" id="plDiff" value="" />
+          <input type="hidden" id="listDiff" value="" />
         </div>
-        <div class="dh-form-row">
-          <label class="dh-form-label">카테고리</label>
-          <div class="dh-cat-select-list" id="plCatList">
-            <!-- JS로 렌더 -->
+        <div class="dh-field">
+          <label>카테고리</label>
+          <div class="dh-cat-sel" id="listCatSel">
+            <span class="dh-hint">카테고리가 없습니다</span>
           </div>
         </div>
-        <div class="dh-modal-actions">
-          <button class="dh-btn-ghost" id="plModalCancel">취소</button>
-          <button class="dh-btn-primary" id="plModalSave">저장</button>
+        <div class="dh-modal-ft">
+          <button class="dh-btn-ghost" id="listModalCancel">취소</button>
+          <button class="dh-btn-accent" id="listModalSave">저장</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ══ 자료 아이템 추가/수정 모달 ══ -->
-  <div class="dh-modal-overlay" id="itemModalOverlay">
-    <div class="dh-modal">
+  <!-- ══ 자료 추가/수정 모달 ════════════════ -->
+  <div class="dh-overlay" id="itemModal">
+    <div class="dh-modal dh-modal-lg">
       <div class="dh-modal-hd">
-        <span class="dh-modal-title" id="itemModalTitle">자료 추가</span>
-        <button class="dh-modal-close" id="itemModalClose">✕</button>
+        <span id="itemModalTitle">자료 추가</span>
+        <button class="dh-modal-x" id="itemModalClose">✕</button>
       </div>
       <div class="dh-modal-bd">
         <input type="hidden" id="itemId" />
-        <div class="dh-form-row">
-          <label class="dh-form-label">자료 유형</label>
-          <div class="dh-type-select" id="itemTypeSelect">
-            <button class="dh-type-sel-btn active" data-type="link">🔗 링크</button>
-            <button class="dh-type-sel-btn" data-type="note">📝 노트</button>
-            <button class="dh-type-sel-btn" data-type="file">📎 파일</button>
-            <button class="dh-type-sel-btn" data-type="video">🎬 영상</button>
+
+        <div class="dh-field">
+          <label>유형</label>
+          <div class="dh-btn-row" id="typeBtnRow">
+            <button class="dh-tog active" data-v="link">🔗 링크</button>
+            <button class="dh-tog" data-v="note">📝 노트</button>
+            <button class="dh-tog" data-v="file">📎 파일</button>
+            <button class="dh-tog" data-v="video">🎬 영상</button>
           </div>
           <input type="hidden" id="itemType" value="link" />
         </div>
-        <div class="dh-form-row">
-          <label class="dh-form-label">제목 <span class="dh-req">*</span></label>
-          <input type="text" class="dh-form-input" id="itemTitle" placeholder="자료 제목" />
+
+        <div class="dh-field">
+          <label>제목 <span class="dh-req">*</span></label>
+          <input type="text" id="itemTitle" placeholder="자료 제목" />
         </div>
-        <div class="dh-form-row" id="itemUrlRow">
-          <label class="dh-form-label">URL</label>
-          <input type="url" class="dh-form-input" id="itemUrl" placeholder="https://..." />
+
+        <!-- URL 필드 (링크/영상) -->
+        <div class="dh-field" id="fldUrl">
+          <label>URL</label>
+          <input type="url" id="itemUrl" placeholder="https://..." />
+          <span class="dh-hint" id="urlHint"></span>
         </div>
-        <div class="dh-form-row">
-          <label class="dh-form-label">내용 / 메모</label>
-          <textarea class="dh-form-input dh-form-textarea" id="itemContent" rows="4" placeholder="내용을 입력하세요..."></textarea>
+
+        <!-- 파일 업로드 필드 -->
+        <div class="dh-field" id="fldFile" style="display:none">
+          <label>파일 업로드</label>
+          <div class="dh-dropzone" id="dropzone">
+            <input type="file" id="fileInput" class="dh-file-input" />
+            <div class="dh-dropzone-inner" id="dropzoneInner">
+              <span class="dh-dz-ico">📤</span>
+              <p class="dh-dz-text">클릭하거나 파일을 드래그하세요</p>
+              <p class="dh-dz-hint">최대 50MB · 모든 형식 지원</p>
+            </div>
+          </div>
+          <!-- 업로드된 파일 표시 -->
+          <div class="dh-file-preview" id="filePreview" style="display:none">
+            <span class="dh-file-ico" id="filePreviewIco">📎</span>
+            <span class="dh-file-name" id="filePreviewName"></span>
+            <button class="dh-file-remove" id="fileRemove">✕</button>
+          </div>
+          <div class="dh-upload-bar" id="uploadBar" style="display:none">
+            <div class="dh-upload-fill" id="uploadFill"></div>
+          </div>
+          <span class="dh-hint" id="uploadStatus"></span>
         </div>
-        <div class="dh-modal-actions">
+
+        <div class="dh-field">
+          <label>내용 / 메모</label>
+          <textarea id="itemContent" rows="5" placeholder="내용을 입력하세요..."></textarea>
+        </div>
+
+        <div class="dh-modal-ft">
           <button class="dh-btn-ghost" id="itemModalCancel">취소</button>
-          <button class="dh-btn-primary" id="itemModalSave">저장</button>
+          <button class="dh-btn-accent" id="itemModalSave">저장</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ══ 카테고리 관리 모달 ══ -->
-  <div class="dh-modal-overlay" id="catModalOverlay">
+  <!-- ══ 카테고리 관리 모달 ════════════════ -->
+  <div class="dh-overlay" id="catModal">
     <div class="dh-modal dh-modal-wide">
       <div class="dh-modal-hd">
-        <span class="dh-modal-title">🏷 카테고리 관리</span>
-        <button class="dh-modal-close" id="catModalClose">✕</button>
+        <span>🏷 카테고리 관리</span>
+        <button class="dh-modal-x" id="catModalClose">✕</button>
       </div>
       <div class="dh-modal-bd">
         <div class="dh-cat-mgr">
-          <div class="dh-cat-mgr-list" id="catMgrList">
-            <!-- JS로 렌더 -->
-          </div>
-          <div class="dh-cat-mgr-form">
-            <input type="hidden" id="catEditId" />
-            <div class="dh-form-row">
-              <label class="dh-form-label">카테고리 이름 <span class="dh-req">*</span></label>
-              <input type="text" class="dh-form-input" id="catName" placeholder="새 카테고리" />
+          <div class="dh-cat-col">
+            <div class="dh-col-title">등록된 카테고리</div>
+            <div id="catMgrList" class="dh-cat-mgr-list">
+              <span class="dh-hint">없음</span>
             </div>
-            <div class="dh-form-row">
-              <label class="dh-form-label">상위 카테고리</label>
-              <select class="dh-form-input" id="catParent">
+          </div>
+          <div class="dh-cat-col">
+            <div class="dh-col-title">새 카테고리</div>
+            <div class="dh-field">
+              <label>이름 <span class="dh-req">*</span></label>
+              <input type="text" id="catName" placeholder="예: 수학, 영어 단어" />
+            </div>
+            <div class="dh-field">
+              <label>상위 카테고리</label>
+              <select id="catParent">
                 <option value="">없음 (최상위)</option>
               </select>
             </div>
-            <div class="dh-modal-actions" style="padding-top:0">
-              <button class="dh-btn-ghost" id="catFormReset">초기화</button>
-              <button class="dh-btn-primary" id="catFormSave">추가</button>
-            </div>
+            <button class="dh-btn-accent" id="catAddBtn" style="width:100%">추가</button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ══ 자료 뷰어 (노트/내용 전체 보기) ══ -->
-  <div class="dh-viewer-overlay" id="viewerOverlay">
-    <div class="dh-viewer">
-      <div class="dh-viewer-hd">
-        <div class="dh-viewer-title-wrap">
-          <span class="dh-viewer-type-badge" id="viewerTypeBadge"></span>
-          <span class="dh-viewer-title" id="viewerTitle"></span>
-        </div>
-        <div style="display:flex;gap:8px">
-          <a class="dh-viewer-link-btn" id="viewerLinkBtn" href="#" target="_blank" rel="noopener" style="display:none">🔗 열기</a>
-          <button class="dh-modal-close" id="viewerClose">✕</button>
-        </div>
-      </div>
-      <div class="dh-viewer-body" id="viewerBody"></div>
-    </div>
-  </div>
-
-  <footer class="footer">
-    <p>© 2025 StudyHub · 나만의 학습 관리 시스템</p>
-  </footer>
-
+  <footer class="footer"><p>© 2025 StudyHub · 나만의 학습 관리 시스템</p></footer>
   <script src="data.js"></script>
 </body>
 </html>
