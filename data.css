@@ -357,28 +357,71 @@
 .dh-viewer-body {
   flex: 1; overflow: hidden;
   display: flex; flex-direction: column;
+  background: var(--bg);
 }
-/* iframe 뷰 */
-.dh-viewer-iframe {
-  width: 100%; height: 100%; border: none; background: #fff;
+
+/* ── iframe 래퍼: 16:9 비율 유지 ── */
+.dh-viewer-iframe-wrap {
+  flex: 1; display: flex;
+  align-items: center; justify-content: center;
+  padding: 0; background: #000; overflow: hidden;
 }
-/* 노트/텍스트 뷰 */
+.dh-viewer-iframe-wrap iframe {
+  /* 뷰어 공간을 꽉 채우되 16:9 비율 유지 */
+  width: 100%; height: 100%; border: none;
+  aspect-ratio: 16 / 9;
+  max-height: 100%;
+  display: block;
+}
+
+/* PDF 전용 iframe (비율 고정 없이 꽉 채움) */
+.dh-viewer-iframe-pdf {
+  width: 100%; height: 100%; border: none; display: block;
+  background: #fff; flex: 1;
+}
+
+/* ── 노트/텍스트 뷰 ── */
 .dh-viewer-text {
-  flex: 1; overflow-y: auto; padding: 20px 22px;
-  font-size: .9rem; color: var(--text2); line-height: 1.8;
+  flex: 1; overflow-y: auto; padding: 22px 24px;
+  font-size: .92rem; color: var(--text2); line-height: 1.85;
   white-space: pre-wrap; word-break: break-word;
 }
-/* 파일 뷰 */
-.dh-viewer-file {
-  display: flex; flex-direction: column; align-items: center;
-  justify-content: center; height: 100%; gap: 16px; padding: 24px;
+
+/* ── 이미지 뷰 ── */
+.dh-viewer-img-wrap {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 20px; overflow: auto; background: var(--bg3);
 }
-.dh-viewer-file-ico  { font-size: 4rem; opacity: .5; }
-.dh-viewer-file-name { font-size: .95rem; color: var(--text2); font-weight: 600; word-break: break-all; text-align: center; }
+.dh-viewer-img-wrap img {
+  max-width: 100%; max-height: 100%;
+  object-fit: contain; border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.4);
+}
+
+/* ── 오디오 뷰 ── */
+.dh-viewer-audio-wrap {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 20px; padding: 32px; background: var(--bg3);
+}
+.dh-viewer-audio-ico  { font-size: 4rem; opacity: .45; }
+.dh-viewer-audio-name { font-size: 1rem; color: var(--text2); font-weight: 600; text-align: center; }
+.dh-viewer-audio-wrap audio { width: 100%; max-width: 380px; }
+
+/* ── 파일 다운로드 뷰 ── */
+.dh-viewer-file {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 16px; padding: 32px; background: var(--bg3);
+}
+.dh-viewer-file-ico  { font-size: 4.5rem; opacity: .45; }
+.dh-viewer-file-name {
+  font-size: 1rem; color: var(--text2); font-weight: 600;
+  word-break: break-all; text-align: center; max-width: 320px;
+}
 .dh-viewer-file-btn  {
-  padding: 10px 24px; border-radius: var(--radius-sm);
-  background: var(--accent); color: #fff; font-size: .88rem; font-weight: 700;
-  text-decoration: none; transition: background .2s;
+  padding: 11px 28px; border-radius: var(--radius-sm);
+  background: var(--accent); color: #fff; font-size: .9rem; font-weight: 700;
+  text-decoration: none; transition: background .2s; margin-top: 4px;
 }
 .dh-viewer-file-btn:hover { background: #8aaeff; }
 
