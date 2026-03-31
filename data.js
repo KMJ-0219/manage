@@ -466,54 +466,54 @@ function openViewer(item, listEl) {
   }
 
   if (item.type === 'file' && item.file_path) {
-    // 파일 — 이미지/영상은 인라인, 나머지는 다운로드 버튼
     const fname = item.file_path.split('/').pop();
     const ext   = fname.split('.').pop().toLowerCase();
+
     if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) {
-      // 이미지 직접 표시
       body.innerHTML = `
-        <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto">
-          <img src="${esc(item.file_path)}" alt="${esc(item.title)}"
-               style="max-width:100%;max-height:100%;border-radius:8px;object-fit:contain" />
+        <div class="dh-viewer-img-wrap">
+          <img src="${esc(item.file_path)}" alt="${esc(item.title)}" />
         </div>`;
+
     } else if (['mp4','webm','mov'].includes(ext)) {
-      // 영상 직접 재생
+      // 영상 파일: 16:9 래퍼 안에서 재생
       body.innerHTML = `
-        <div style="flex:1;display:flex;align-items:center;justify-content:center;background:#000;padding:0">
-          <video controls style="max-width:100%;max-height:100%" src="${esc(item.file_path)}">
+        <div class="dh-viewer-iframe-wrap" style="background:#000">
+          <video controls
+            style="width:100%;height:100%;max-height:100%;aspect-ratio:16/9;display:block;background:#000"
+            src="${esc(item.file_path)}">
             브라우저가 동영상을 지원하지 않습니다.
           </video>
         </div>`;
-    } else if (['mp3','wav','ogg','flac'].includes(ext)) {
+
+    } else if (['mp3','wav','ogg','flac','aac','m4a'].includes(ext)) {
       body.innerHTML = `
-        <div class="dh-viewer-file">
-          <div class="dh-viewer-file-ico">🎵</div>
-          <div class="dh-viewer-file-name">${esc(item.title)}</div>
-          <audio controls style="width:100%;max-width:360px" src="${esc(item.file_path)}">
+        <div class="dh-viewer-audio-wrap">
+          <div class="dh-viewer-audio-ico">🎵</div>
+          <div class="dh-viewer-audio-name">${esc(item.title)}</div>
+          <audio controls src="${esc(item.file_path)}">
             브라우저가 오디오를 지원하지 않습니다.
           </audio>
         </div>`;
+
     } else if (ext === 'pdf') {
-      // PDF → iframe
-      body.innerHTML = `<iframe class="dh-viewer-iframe" src="${esc(item.file_path)}" title="${esc(item.title)}"></iframe>`;
+      body.innerHTML = `<iframe class="dh-viewer-iframe-pdf" src="${esc(item.file_path)}" title="${esc(item.title)}"></iframe>`;
+
     } else {
-      // 기타 파일 → 다운로드
       body.innerHTML = `
         <div class="dh-viewer-file">
           <div class="dh-viewer-file-ico">${fileIco(fname)}</div>
           <div class="dh-viewer-file-name">${esc(item.title)}</div>
-          <a class="dh-viewer-file-btn" href="${esc(item.file_path)}" download target="_blank" rel="noopener">
-            ⬇ 다운로드
-          </a>
+          <a class="dh-viewer-file-btn" href="${esc(item.file_path)}" download target="_blank" rel="noopener">⬇ 다운로드</a>
         </div>`;
     }
-    // 메모가 있으면 아래 표시
+
     if (item.content) {
-      const noteDiv = document.createElement('div');
-      noteDiv.className = 'dh-viewer-text';
-      noteDiv.style.borderTop = '1px solid var(--border)';
-      noteDiv.textContent = item.content;
-      body.appendChild(noteDiv);
+      const note = document.createElement('div');
+      note.className = 'dh-viewer-text';
+      note.style.cssText = 'border-top:1px solid var(--border);flex:0 0 auto;max-height:30%;';
+      note.textContent = item.content;
+      body.appendChild(note);
     }
     return;
   }
@@ -522,28 +522,41 @@ function openViewer(item, listEl) {
   if (item.url) {
     const embedUrl = getEmbedUrl(item.url);
     if (embedUrl) {
-      // 임베드 가능
-      body.innerHTML = `<iframe class="dh-viewer-iframe" src="${esc(embedUrl)}"
-        allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture"
-        allowfullscreen title="${esc(item.title)}"></iframe>`;
+      // 임베드 가능 → 16:9 래퍼
+      body.innerHTML = `
+        <div class="dh-viewer-iframe-wrap">
+          <iframe src="${esc(embedUrl)}"
+            allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;web-share"
+            allowfullscreen
+            title="${esc(item.title)}"></iframe>
+        </div>`;
+      // 메모가 있으면 하단에
+      if (item.content) {
+        const note = document.createElement('div');
+        note.className = 'dh-viewer-text';
+        note.style.cssText = 'border-top:1px solid var(--border);flex:0 0 auto;max-height:25%;';
+        note.textContent = item.content;
+        body.appendChild(note);
+      }
     } else {
-      // 임베드 불가 → 링크 + 설명
+      // 임베드 불가 → 링크 박스 + 메모
       body.innerHTML = `
         <div class="dh-viewer-text">
-          <div style="margin-bottom:14px;padding:12px 16px;background:var(--bg3);
-                      border-radius:8px;border:1px solid var(--border)">
+          <div style="margin-bottom:16px;padding:14px 16px;background:var(--bg3);
+                      border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;gap:10px">
+            <span style="font-size:1.2rem">🔗</span>
             <a href="${esc(item.url)}" target="_blank" rel="noopener"
-               style="color:var(--accent);font-size:.88rem;word-break:break-all">
-              🔗 ${esc(item.url)}
+               style="color:var(--accent);font-size:.88rem;word-break:break-all;flex:1">
+              ${esc(item.url)}
             </a>
           </div>
-          ${item.content ? `<div style="white-space:pre-wrap">${esc(item.content)}</div>` : ''}
+          ${item.content ? `<div style="white-space:pre-wrap;color:var(--text2)">${esc(item.content)}</div>` : ''}
         </div>`;
     }
     return;
   }
 
-  // fallback
+  // 노트 / fallback
   const div = document.createElement('div');
   div.className = 'dh-viewer-text';
   div.textContent = item.content || '(내용 없음)';
